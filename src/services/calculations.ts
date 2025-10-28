@@ -12,20 +12,24 @@ export const CONSTANTS = {
 
 export function calculateDeliveredValue(course: Course): number {
   if (course.type === "expedition") {
-    return course.completed && course.expedition?.validated 
-      ? course.expedition.expeditionFee 
+    return course.completed && course.expedition?.validated
+      ? course.expedition.expeditionFee
       : 0;
   }
 
   if (course.type === "livraison" && course.livraison) {
     const deliveredArticles = course.livraison.articles.filter(
-      (a) => a.status === "delivered"
+      (a) => a.status === "delivered",
     );
-    const articlesTotal = deliveredArticles.reduce((sum, a) => sum + a.price, 0);
-    
+    const articlesTotal = deliveredArticles.reduce(
+      (sum, a) => sum + a.price,
+      0,
+    );
+
     // Add delivery fee if at least one article was delivered
-    const deliveryFee = deliveredArticles.length > 0 ? course.livraison.deliveryFee : 0;
-    
+    const deliveryFee =
+      deliveredArticles.length > 0 ? course.livraison.deliveryFee : 0;
+
     return articlesTotal + deliveryFee;
   }
 
@@ -48,24 +52,19 @@ export function calculateDailyPayable(
   livreurId: string,
   date: string,
   courses: Course[],
-  expenses: Expense[]
+  expenses: Expense[],
 ): number {
   const dayCourses = courses.filter(
-    (c) => c.livreurId === livreurId && c.date === date
+    (c) => c.livreurId === livreurId && c.date === date,
   );
 
   const totalDelivered = dayCourses.reduce(
     (sum, c) => sum + calculateDeliveredValue(c),
-    0
+    0,
   );
 
   const approvedExpenses = expenses
-    .filter(
-      (e) =>
-        e.livreurId === livreurId &&
-        e.date === date &&
-        e.validated
-    )
+    .filter((e) => e.livreurId === livreurId && e.date === date && e.validated)
     .reduce((sum, e) => sum + e.amount, 0);
 
   return totalDelivered - (CONSTANTS.FIXED_DAILY_COST + approvedExpenses);
@@ -76,7 +75,7 @@ export function calculateMonthlySalary(
   startDate: string,
   endDate: string,
   courses: Course[],
-  manquants: Manquant[]
+  manquants: Manquant[],
 ): {
   workingDays: number;
   totalCourses: number;
@@ -90,7 +89,7 @@ export function calculateMonthlySalary(
       c.livreurId === livreurId &&
       c.date >= startDate &&
       c.date <= endDate &&
-      isCourseCompleted(c)
+      isCourseCompleted(c),
   );
 
   const workingDays = new Set(relevantCourses.map((c) => c.date)).size;
@@ -108,9 +107,7 @@ export function calculateMonthlySalary(
   const totalManquants = manquants
     .filter(
       (m) =>
-        m.livreurId === livreurId &&
-        m.date >= startDate &&
-        m.date <= endDate
+        m.livreurId === livreurId && m.date >= startDate && m.date <= endDate,
     )
     .reduce((sum, m) => sum + m.amount, 0);
 
@@ -131,19 +128,19 @@ export function detectManquants(
   date: string,
   courses: Course[],
   payment: DailyPayment | undefined,
-  expenses: Expense[]
+  expenses: Expense[],
 ): Manquant[] {
   const manquants: Omit<Manquant, "id">[] = [];
 
   const dayCourses = courses.filter(
-    (c) => c.livreurId === livreurId && c.date === date
+    (c) => c.livreurId === livreurId && c.date === date,
   );
 
   // Check for undelivered articles not returned
   dayCourses.forEach((course) => {
     if (course.type === "livraison" && course.livraison) {
       const undeliveredNotReturned = course.livraison.articles.filter(
-        (a) => a.status === "not_delivered" && !a.reason?.includes("returned")
+        (a) => a.status === "not_delivered" && !a.reason?.includes("returned"),
       );
 
       undeliveredNotReturned.forEach((article) => {
@@ -180,7 +177,7 @@ export function detectManquants(
       e.livreurId === livreurId &&
       e.date === date &&
       !e.validated &&
-      !e.rejectedReason
+      !e.rejectedReason,
   );
 
   unvalidatedExpenses.forEach((expense) => {

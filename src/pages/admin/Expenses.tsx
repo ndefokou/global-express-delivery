@@ -31,15 +31,19 @@ const AdminExpensesPage = () => {
     toast.success("Dépense rejetée");
   };
 
-  const pendingExpenses = expenses.filter(e => !e.validated && !e.rejectedReason);
-  const validatedExpenses = expenses.filter(e => e.validated);
-  const rejectedExpenses = expenses.filter(e => e.rejectedReason);
+  const pendingExpenses = expenses.filter(
+    (e) => !e.validated && !e.rejectedReason,
+  );
+  const validatedExpenses = expenses.filter((e) => e.validated);
+  const rejectedExpenses = expenses.filter((e) => e.rejectedReason);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Dépenses moto</h1>
-        <p className="text-muted-foreground">Valider ou rejeter les dépenses des livreurs</p>
+        <p className="text-muted-foreground">
+          Valider ou rejeter les dépenses des livreurs
+        </p>
       </div>
 
       {pendingExpenses.length > 0 && (
@@ -47,7 +51,7 @@ const AdminExpensesPage = () => {
           <h2 className="text-xl font-bold mb-4">En attente de validation</h2>
           <div className="space-y-3">
             {pendingExpenses.map((expense) => {
-              const livreur = livreurs.find(l => l.id === expense.livreurId);
+              const livreur = livreurs.find((l) => l.id === expense.livreurId);
               return (
                 <Card key={expense.id}>
                   <CardHeader>
@@ -55,9 +59,12 @@ const AdminExpensesPage = () => {
                       <div className="flex items-center gap-3">
                         <Wrench className="h-5 w-5 text-primary" />
                         <div>
-                          <CardTitle className="text-lg">{expense.description}</CardTitle>
+                          <CardTitle className="text-lg">
+                            {expense.description}
+                          </CardTitle>
                           <p className="text-sm text-muted-foreground">
-                            {livreur?.name} • {new Date(expense.date).toLocaleDateString('fr-FR')}
+                            {livreur?.name} •{" "}
+                            {new Date(expense.date).toLocaleDateString("fr-FR")}
                           </p>
                         </div>
                       </div>
@@ -66,7 +73,9 @@ const AdminExpensesPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between mb-4">
-                      <p className="text-2xl font-bold">{expense.amount.toLocaleString()} XOF</p>
+                      <p className="text-2xl font-bold">
+                        {expense.amount.toLocaleString()} XOF
+                      </p>
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -98,7 +107,7 @@ const AdminExpensesPage = () => {
           <h2 className="text-xl font-bold mb-4">Validées</h2>
           <div className="space-y-3">
             {validatedExpenses.slice(0, 5).map((expense) => {
-              const livreur = livreurs.find(l => l.id === expense.livreurId);
+              const livreur = livreurs.find((l) => l.id === expense.livreurId);
               return (
                 <Card key={expense.id}>
                   <CardContent className="p-4">
@@ -106,11 +115,14 @@ const AdminExpensesPage = () => {
                       <div>
                         <p className="font-medium">{expense.description}</p>
                         <p className="text-sm text-muted-foreground">
-                          {livreur?.name} • {new Date(expense.date).toLocaleDateString('fr-FR')}
+                          {livreur?.name} •{" "}
+                          {new Date(expense.date).toLocaleDateString("fr-FR")}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold">{expense.amount.toLocaleString()} XOF</p>
+                        <p className="font-bold">
+                          {expense.amount.toLocaleString()} XOF
+                        </p>
                         <StatusBadge status="validated" />
                       </div>
                     </div>
@@ -127,7 +139,7 @@ const AdminExpensesPage = () => {
           <h2 className="text-xl font-bold mb-4">Rejetées</h2>
           <div className="space-y-3">
             {rejectedExpenses.slice(0, 5).map((expense) => {
-              const livreur = livreurs.find(l => l.id === expense.livreurId);
+              const livreur = livreurs.find((l) => l.id === expense.livreurId);
               return (
                 <Card key={expense.id}>
                   <CardContent className="p-4">
@@ -135,14 +147,17 @@ const AdminExpensesPage = () => {
                       <div>
                         <p className="font-medium">{expense.description}</p>
                         <p className="text-sm text-muted-foreground">
-                          {livreur?.name} • {new Date(expense.date).toLocaleDateString('fr-FR')}
+                          {livreur?.name} •{" "}
+                          {new Date(expense.date).toLocaleDateString("fr-FR")}
                         </p>
                         <p className="text-sm text-destructive mt-1">
                           Raison: {expense.rejectedReason}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold">{expense.amount.toLocaleString()} XOF</p>
+                        <p className="font-bold">
+                          {expense.amount.toLocaleString()} XOF
+                        </p>
                         <StatusBadge status="rejected" />
                       </div>
                     </div>

@@ -13,12 +13,19 @@ const ValidationsPage = () => {
 
   useEffect(() => {
     const courses = getCourses();
-    const pending = courses.filter(c => {
-      if (c.type === "expedition" && c.expedition && c.completed && !c.expedition.validated) {
+    const pending = courses.filter((c) => {
+      if (
+        c.type === "expedition" &&
+        c.expedition &&
+        c.completed &&
+        !c.expedition.validated
+      ) {
         return true;
       }
       if (c.type === "livraison" && c.livraison) {
-        return c.livraison.articles.some(a => a.status === "not_delivered" && !a.reason?.includes("validé"));
+        return c.livraison.articles.some(
+          (a) => a.status === "not_delivered" && !a.reason?.includes("validé"),
+        );
       }
       return false;
     });
@@ -26,7 +33,7 @@ const ValidationsPage = () => {
   }, []);
 
   const handleValidateExpedition = (courseId: string, validated: boolean) => {
-    const course = pendingCourses.find(c => c.id === courseId);
+    const course = pendingCourses.find((c) => c.id === courseId);
     if (!course || !course.expedition) return;
 
     updateCourse(courseId, {
@@ -36,18 +43,18 @@ const ValidationsPage = () => {
       },
     });
 
-    setPendingCourses(pendingCourses.filter(c => c.id !== courseId));
+    setPendingCourses(pendingCourses.filter((c) => c.id !== courseId));
     toast.success(validated ? "Expédition validée" : "Expédition rejetée");
   };
 
   const handleValidateReturn = (courseId: string, articleId: string) => {
-    const course = pendingCourses.find(c => c.id === courseId);
+    const course = pendingCourses.find((c) => c.id === courseId);
     if (!course || !course.livraison) return;
 
-    const updatedArticles = course.livraison.articles.map(a =>
+    const updatedArticles = course.livraison.articles.map((a) =>
       a.id === articleId
         ? { ...a, reason: `${a.reason} - Retour validé par admin` }
-        : a
+        : a,
     );
 
     updateCourse(courseId, {
@@ -56,12 +63,19 @@ const ValidationsPage = () => {
 
     // Refresh
     const courses = getCourses();
-    const pending = courses.filter(c => {
-      if (c.type === "expedition" && c.expedition && c.completed && !c.expedition.validated) {
+    const pending = courses.filter((c) => {
+      if (
+        c.type === "expedition" &&
+        c.expedition &&
+        c.completed &&
+        !c.expedition.validated
+      ) {
         return true;
       }
       if (c.type === "livraison" && c.livraison) {
-        return c.livraison.articles.some(a => a.status === "not_delivered" && !a.reason?.includes("validé"));
+        return c.livraison.articles.some(
+          (a) => a.status === "not_delivered" && !a.reason?.includes("validé"),
+        );
       }
       return false;
     });
@@ -73,25 +87,28 @@ const ValidationsPage = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Validations</h1>
-        <p className="text-muted-foreground">Valider les retours et expéditions</p>
+        <p className="text-muted-foreground">
+          Valider les retours et expéditions
+        </p>
       </div>
 
       <div className="space-y-4">
         {pendingCourses.map((course) => {
-          const livreur = livreurs.find(l => l.id === course.livreurId);
-          
+          const livreur = livreurs.find((l) => l.id === course.livreurId);
+
           return (
             <Card key={course.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-lg">
-                      {course.type === "expedition" 
+                      {course.type === "expedition"
                         ? `Expédition - ${course.expedition?.destinationCity}`
                         : `Livraison - ${course.livraison?.contactName}`}
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      {livreur?.name} • {new Date(course.date).toLocaleDateString('fr-FR')}
+                      {livreur?.name} •{" "}
+                      {new Date(course.date).toLocaleDateString("fr-FR")}
                     </p>
                   </div>
                   <StatusBadge status="pending" />
@@ -104,12 +121,16 @@ const ValidationsPage = () => {
                     <div className="flex items-center justify-between bg-secondary/50 p-4 rounded-lg">
                       <div>
                         <p className="font-medium">Montant de l'expédition</p>
-                        <p className="text-2xl font-bold">{course.expedition.expeditionFee} XOF</p>
+                        <p className="text-2xl font-bold">
+                          {course.expedition.expeditionFee} XOF
+                        </p>
                       </div>
                     </div>
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => handleValidateExpedition(course.id, true)}
+                        onClick={() =>
+                          handleValidateExpedition(course.id, true)
+                        }
                         className="flex-1"
                       >
                         <CheckCircle className="h-4 w-4 mr-2" />
@@ -117,7 +138,9 @@ const ValidationsPage = () => {
                       </Button>
                       <Button
                         variant="destructive"
-                        onClick={() => handleValidateExpedition(course.id, false)}
+                        onClick={() =>
+                          handleValidateExpedition(course.id, false)
+                        }
                         className="flex-1"
                       >
                         <XCircle className="h-4 w-4 mr-2" />
@@ -125,33 +148,47 @@ const ValidationsPage = () => {
                       </Button>
                     </div>
                   </div>
-                ) : course.livraison && (
-                  <div className="space-y-3">
-                    {course.livraison.articles
-                      .filter(a => a.status === "not_delivered" && !a.reason?.includes("validé"))
-                      .map(article => (
-                        <div key={article.id} className="bg-secondary/50 p-4 rounded-lg space-y-2">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium">{article.name}</p>
-                              <p className="text-sm text-muted-foreground">{article.price} XOF</p>
-                              <p className="text-sm mt-1">
-                                <span className="font-medium">Raison:</span> {article.reason}
-                              </p>
-                            </div>
-                            <StatusBadge status="not_delivered" />
-                          </div>
-                          <Button
-                            onClick={() => handleValidateReturn(course.id, article.id)}
-                            size="sm"
-                            className="w-full"
+                ) : (
+                  course.livraison && (
+                    <div className="space-y-3">
+                      {course.livraison.articles
+                        .filter(
+                          (a) =>
+                            a.status === "not_delivered" &&
+                            !a.reason?.includes("validé"),
+                        )
+                        .map((article) => (
+                          <div
+                            key={article.id}
+                            className="bg-secondary/50 p-4 rounded-lg space-y-2"
                           >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Valider le retour
-                          </Button>
-                        </div>
-                      ))}
-                  </div>
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-medium">{article.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {article.price} XOF
+                                </p>
+                                <p className="text-sm mt-1">
+                                  <span className="font-medium">Raison:</span>{" "}
+                                  {article.reason}
+                                </p>
+                              </div>
+                              <StatusBadge status="not_delivered" />
+                            </div>
+                            <Button
+                              onClick={() =>
+                                handleValidateReturn(course.id, article.id)
+                              }
+                              size="sm"
+                              className="w-full"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Valider le retour
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+                  )
                 )}
               </CardContent>
             </Card>
@@ -163,7 +200,9 @@ const ValidationsPage = () => {
         <Card>
           <CardContent className="py-12 text-center">
             <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Aucune validation en attente</p>
+            <p className="text-muted-foreground">
+              Aucune validation en attente
+            </p>
           </CardContent>
         </Card>
       )}

@@ -3,15 +3,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DollarSign, TrendingUp, TrendingDown } from "lucide-react";
-import { getLivreurs, getPayments, addPayment, getCourses, getExpenses } from "@/services/storage";
+import {
+  getLivreurs,
+  getPayments,
+  addPayment,
+  getCourses,
+  getExpenses,
+} from "@/services/storage";
 import { calculateDailyPayable } from "@/services/calculations";
 import { toast } from "sonner";
 
 const PaymentsPage = () => {
   const [payments, setPayments] = useState(getPayments());
-  const livreurs = getLivreurs().filter(l => l.active);
+  const livreurs = getLivreurs().filter((l) => l.active);
   const [formData, setFormData] = useState({
     livreurId: "",
     date: new Date().toISOString().split("T")[0],
@@ -30,7 +42,7 @@ const PaymentsPage = () => {
       formData.livreurId,
       formData.date,
       courses,
-      expenses
+      expenses,
     );
 
     addPayment({
@@ -51,7 +63,9 @@ const PaymentsPage = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Paiements quotidiens</h1>
-        <p className="text-muted-foreground">Déclarer les montants reçus des livreurs</p>
+        <p className="text-muted-foreground">
+          Déclarer les montants reçus des livreurs
+        </p>
       </div>
 
       <Card>
@@ -64,7 +78,9 @@ const PaymentsPage = () => {
               <Label>Livreur</Label>
               <Select
                 value={formData.livreurId}
-                onValueChange={(v) => setFormData({ ...formData, livreurId: v })}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, livreurId: v })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner" />
@@ -84,7 +100,9 @@ const PaymentsPage = () => {
               <Input
                 type="date"
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, date: e.target.value })
+                }
               />
             </div>
 
@@ -93,7 +111,9 @@ const PaymentsPage = () => {
               <Input
                 type="number"
                 value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
+                onChange={(e) =>
+                  setFormData({ ...formData, amount: Number(e.target.value) })
+                }
                 placeholder="0"
               />
             </div>
@@ -110,7 +130,7 @@ const PaymentsPage = () => {
         <h2 className="text-xl font-bold mb-4">Historique des paiements</h2>
         <div className="space-y-3">
           {payments.slice(0, 20).map((payment) => {
-            const livreur = livreurs.find(l => l.id === payment.livreurId);
+            const livreur = livreurs.find((l) => l.id === payment.livreurId);
             const difference = payment.amount - payment.expectedAmount;
             const isCorrect = difference >= 0;
 
@@ -119,9 +139,11 @@ const PaymentsPage = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">{livreur?.name || "Livreur inconnu"}</p>
+                      <p className="font-medium">
+                        {livreur?.name || "Livreur inconnu"}
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(payment.date).toLocaleDateString('fr-FR')}
+                        {new Date(payment.date).toLocaleDateString("fr-FR")}
                       </p>
                     </div>
 
@@ -133,13 +155,17 @@ const PaymentsPage = () => {
                           <TrendingDown className="h-4 w-4 text-destructive" />
                         )}
                         <div>
-                          <p className="font-bold">{payment.amount.toLocaleString()} XOF</p>
+                          <p className="font-bold">
+                            {payment.amount.toLocaleString()} XOF
+                          </p>
                           <p className="text-sm text-muted-foreground">
-                            Attendu: {payment.expectedAmount.toLocaleString()} XOF
+                            Attendu: {payment.expectedAmount.toLocaleString()}{" "}
+                            XOF
                           </p>
                           {!isCorrect && (
                             <p className="text-sm text-destructive font-medium">
-                              Manque: {Math.abs(difference).toLocaleString()} XOF
+                              Manque: {Math.abs(difference).toLocaleString()}{" "}
+                              XOF
                             </p>
                           )}
                         </div>

@@ -26,13 +26,15 @@ function ReloadPrompt() {
       <div className="fixed right-4 bottom-4 z-50">
         <Card>
           <CardHeader>
-            <CardTitle>{offlineReady ? "App ready to work offline" : "New content available, click on reload button to update."}</CardTitle>
+            <CardTitle>
+              {offlineReady
+                ? "App ready to work offline"
+                : "New content available, click on reload button to update."}
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex gap-4">
             {needRefresh && (
-              <Button onClick={() => updateServiceWorker(true)}>
-                Reload
-              </Button>
+              <Button onClick={() => updateServiceWorker(true)}>Reload</Button>
             )}
             <Button variant="outline" onClick={() => close()}>
               Close

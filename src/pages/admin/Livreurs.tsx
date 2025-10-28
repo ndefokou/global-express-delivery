@@ -1,12 +1,23 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, UserCheck, UserX } from "lucide-react";
-import { getLivreurs, addLivreur, updateLivreur, deleteLivreur } from "@/services/storage";
+import {
+  getLivreurs,
+  addLivreur,
+  updateLivreur,
+  deleteLivreur,
+} from "@/services/storage";
 import { toast } from "sonner";
 import { Livreur } from "@/types";
 
@@ -43,21 +54,25 @@ const LivreursPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold">Gestion des livreurs</h1>
-          <p className="text-muted-foreground">Ajouter et gérer vos livreurs</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">
+            Gestion des livreurs
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Ajouter et gérer vos livreurs
+          </p>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
-              Ajouter un livreur
+              <span className="text-sm sm:text-base">Ajouter un livreur</span>
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Nouveau livreur</DialogTitle>
             </DialogHeader>
@@ -67,7 +82,9 @@ const LivreursPage = () => {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="Ex: Jean Dupont"
                 />
               </div>
@@ -76,7 +93,9 @@ const LivreursPage = () => {
                 <Input
                   id="phone"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
                   placeholder="Ex: +225 07 XX XX XX XX"
                 />
               </div>
@@ -88,16 +107,23 @@ const LivreursPage = () => {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {livreurs.map((livreur) => (
           <Card key={livreur.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{livreur.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{livreur.phone}</p>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <CardTitle className="text-base sm:text-lg truncate">
+                    {livreur.name}
+                  </CardTitle>
+                  <p className="text-xs sm:text-sm text-muted-foreground break-all">
+                    {livreur.phone}
+                  </p>
                 </div>
-                <Badge variant={livreur.active ? "default" : "secondary"}>
+                <Badge
+                  variant={livreur.active ? "default" : "secondary"}
+                  className="text-xs whitespace-nowrap"
+                >
                   {livreur.active ? "Actif" : "Inactif"}
                 </Badge>
               </div>
@@ -108,12 +134,20 @@ const LivreursPage = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => handleToggleActive(livreur.id, livreur.active)}
-                  className="flex-1"
+                  className="flex-1 text-xs sm:text-sm"
                 >
                   {livreur.active ? (
-                    <><UserX className="h-4 w-4 mr-1" /> Désactiver</>
+                    <>
+                      <UserX className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />{" "}
+                      <span className="hidden sm:inline">Désactiver</span>
+                      <span className="sm:hidden">Désact.</span>
+                    </>
                   ) : (
-                    <><UserCheck className="h-4 w-4 mr-1" /> Activer</>
+                    <>
+                      <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />{" "}
+                      <span className="hidden sm:inline">Activer</span>
+                      <span className="sm:hidden">Act.</span>
+                    </>
                   )}
                 </Button>
                 <Button
@@ -121,7 +155,7 @@ const LivreursPage = () => {
                   size="sm"
                   onClick={() => handleDelete(livreur.id)}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </div>
             </CardContent>
@@ -131,8 +165,10 @@ const LivreursPage = () => {
 
       {livreurs.length === 0 && (
         <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">Aucun livreur enregistré</p>
+          <CardContent className="py-8 sm:py-12 text-center">
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Aucun livreur enregistré
+            </p>
           </CardContent>
         </Card>
       )}

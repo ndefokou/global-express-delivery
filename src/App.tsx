@@ -22,17 +22,23 @@ import ReloadPrompt from "@/components/ReloadPrompt";
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode; requiredRole?: "admin" | "livreur" }) => {
+const ProtectedRoute = ({
+  children,
+  requiredRole,
+}: {
+  children: React.ReactNode;
+  requiredRole?: "admin" | "livreur";
+}) => {
   const user = getCurrentUser();
-  
+
   if (!user) {
     return <Navigate to="/" replace />;
   }
-  
+
   if (requiredRole && user.role !== requiredRole) {
     return <Navigate to="/" replace />;
   }
-  
+
   return <>{children}</>;
 };
 
@@ -45,12 +51,15 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Login />} />
-          
-          <Route path="/admin" element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminLayout />
-            </ProtectedRoute>
-          }>
+
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<AdminDashboard />} />
             <Route path="livreurs" element={<AdminLivreurs />} />
             <Route path="courses" element={<AdminCourses />} />
@@ -60,11 +69,14 @@ const App = () => (
             <Route path="reports" element={<AdminReports />} />
           </Route>
 
-          <Route path="/livreur" element={
-            <ProtectedRoute requiredRole="livreur">
-              <LivreurLayout />
-            </ProtectedRoute>
-          }>
+          <Route
+            path="/livreur"
+            element={
+              <ProtectedRoute requiredRole="livreur">
+                <LivreurLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<LivreurCourses />} />
             <Route path="expenses" element={<LivreurExpenses />} />
             <Route path="summary" element={<LivreurSummary />} />

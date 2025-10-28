@@ -3,10 +3,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FileText, Download } from "lucide-react";
-import { getLivreurs, getCourses, getManquants, getExpenses } from "@/services/storage";
-import { calculateMonthlySalary, isCourseCompleted } from "@/services/calculations";
+import {
+  getLivreurs,
+  getCourses,
+  getManquants,
+  getExpenses,
+} from "@/services/storage";
+import {
+  calculateMonthlySalary,
+  isCourseCompleted,
+} from "@/services/calculations";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 
@@ -14,7 +28,9 @@ const ReportsPage = () => {
   const livreurs = getLivreurs();
   const [selectedLivreur, setSelectedLivreur] = useState("");
   const [dateRange, setDateRange] = useState({
-    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0],
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+      .toISOString()
+      .split("T")[0],
     end: new Date().toISOString().split("T")[0],
   });
 
@@ -24,7 +40,7 @@ const ReportsPage = () => {
       return;
     }
 
-    const livreur = livreurs.find(l => l.id === selectedLivreur);
+    const livreur = livreurs.find((l) => l.id === selectedLivreur);
     if (!livreur) return;
 
     const courses = getCourses();
@@ -35,7 +51,7 @@ const ReportsPage = () => {
       dateRange.start,
       dateRange.end,
       courses,
-      manquants
+      manquants,
     );
 
     const doc = new jsPDF();
@@ -45,7 +61,12 @@ const ReportsPage = () => {
     doc.text("FICHE DE PAIE", 105, 20, { align: "center" });
 
     doc.setFontSize(12);
-    doc.text(`Période: ${new Date(dateRange.start).toLocaleDateString('fr-FR')} - ${new Date(dateRange.end).toLocaleDateString('fr-FR')}`, 105, 30, { align: "center" });
+    doc.text(
+      `Période: ${new Date(dateRange.start).toLocaleDateString("fr-FR")} - ${new Date(dateRange.end).toLocaleDateString("fr-FR")}`,
+      105,
+      30,
+      { align: "center" },
+    );
 
     // Livreur info
     doc.setFontSize(14);
@@ -64,11 +85,23 @@ const ReportsPage = () => {
     yPos += 8;
     doc.text(`Total courses livrées: ${salary.totalCourses}`, 20, yPos);
     yPos += 8;
-    doc.text(`Salaire de base: ${salary.baseSalary.toLocaleString()} XOF`, 20, yPos);
+    doc.text(
+      `Salaire de base: ${salary.baseSalary.toLocaleString()} XOF`,
+      20,
+      yPos,
+    );
     yPos += 8;
-    doc.text(`Commissions: ${salary.commissions.toLocaleString()} XOF`, 20, yPos);
+    doc.text(
+      `Commissions: ${salary.commissions.toLocaleString()} XOF`,
+      20,
+      yPos,
+    );
     yPos += 8;
-    doc.text(`Total manquants: ${salary.totalManquants.toLocaleString()} XOF`, 20, yPos);
+    doc.text(
+      `Total manquants: ${salary.totalManquants.toLocaleString()} XOF`,
+      20,
+      yPos,
+    );
     yPos += 12;
 
     // Net salary
@@ -79,9 +112,16 @@ const ReportsPage = () => {
     // Footer
     doc.setFontSize(10);
     doc.setFont(undefined, "normal");
-    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, 105, 280, { align: "center" });
+    doc.text(
+      `Généré le ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}`,
+      105,
+      280,
+      { align: "center" },
+    );
 
-    doc.save(`fiche-paie-${livreur.name.replace(/\s+/g, '-')}-${dateRange.start}.pdf`);
+    doc.save(
+      `fiche-paie-${livreur.name.replace(/\s+/g, "-")}-${dateRange.start}.pdf`,
+    );
     toast.success("Fiche de paie générée");
   };
 
@@ -89,7 +129,9 @@ const ReportsPage = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Rapports</h1>
-        <p className="text-muted-foreground">Générer des fiches de paie et rapports</p>
+        <p className="text-muted-foreground">
+          Générer des fiches de paie et rapports
+        </p>
       </div>
 
       <Card>
@@ -103,7 +145,10 @@ const ReportsPage = () => {
           <div className="space-y-4">
             <div>
               <Label>Livreur</Label>
-              <Select value={selectedLivreur} onValueChange={setSelectedLivreur}>
+              <Select
+                value={selectedLivreur}
+                onValueChange={setSelectedLivreur}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un livreur" />
                 </SelectTrigger>
@@ -123,7 +168,9 @@ const ReportsPage = () => {
                 <Input
                   type="date"
                   value={dateRange.start}
-                  onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                  onChange={(e) =>
+                    setDateRange({ ...dateRange, start: e.target.value })
+                  }
                 />
               </div>
               <div>
@@ -131,7 +178,9 @@ const ReportsPage = () => {
                 <Input
                   type="date"
                   value={dateRange.end}
-                  onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                  onChange={(e) =>
+                    setDateRange({ ...dateRange, end: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -145,30 +194,40 @@ const ReportsPage = () => {
                       dateRange.start,
                       dateRange.end,
                       getCourses(),
-                      getManquants()
+                      getManquants(),
                     );
 
                     return (
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span>Jours travaillés:</span>
-                          <span className="font-medium">{salary.workingDays}</span>
+                          <span className="font-medium">
+                            {salary.workingDays}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span>Courses livrées:</span>
-                          <span className="font-medium">{salary.totalCourses}</span>
+                          <span className="font-medium">
+                            {salary.totalCourses}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span>Salaire de base:</span>
-                          <span className="font-medium">{salary.baseSalary.toLocaleString()} XOF</span>
+                          <span className="font-medium">
+                            {salary.baseSalary.toLocaleString()} XOF
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span>Commissions:</span>
-                          <span className="font-medium">{salary.commissions.toLocaleString()} XOF</span>
+                          <span className="font-medium">
+                            {salary.commissions.toLocaleString()} XOF
+                          </span>
                         </div>
                         <div className="flex justify-between text-destructive">
                           <span>Manquants:</span>
-                          <span className="font-medium">-{salary.totalManquants.toLocaleString()} XOF</span>
+                          <span className="font-medium">
+                            -{salary.totalManquants.toLocaleString()} XOF
+                          </span>
                         </div>
                         <div className="flex justify-between text-lg font-bold pt-2 border-t">
                           <span>Net à payer:</span>
@@ -197,18 +256,23 @@ const ReportsPage = () => {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="text-center p-4 bg-secondary/50 rounded-lg">
               <p className="text-sm text-muted-foreground">Total livreurs</p>
-              <p className="text-2xl font-bold">{livreurs.filter(l => l.active).length}</p>
+              <p className="text-2xl font-bold">
+                {livreurs.filter((l) => l.active).length}
+              </p>
             </div>
             <div className="text-center p-4 bg-secondary/50 rounded-lg">
               <p className="text-sm text-muted-foreground">Courses totales</p>
               <p className="text-2xl font-bold">
-                {getCourses().filter(c => isCourseCompleted(c)).length}
+                {getCourses().filter((c) => isCourseCompleted(c)).length}
               </p>
             </div>
             <div className="text-center p-4 bg-secondary/50 rounded-lg">
               <p className="text-sm text-muted-foreground">Manquants totaux</p>
               <p className="text-2xl font-bold text-destructive">
-                {getManquants().reduce((sum, m) => sum + m.amount, 0).toLocaleString()} XOF
+                {getManquants()
+                  .reduce((sum, m) => sum + m.amount, 0)
+                  .toLocaleString()}{" "}
+                XOF
               </p>
             </div>
           </div>

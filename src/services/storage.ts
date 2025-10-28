@@ -1,4 +1,11 @@
-import { User, Livreur, Course, Expense, DailyPayment, Manquant } from "@/types";
+import {
+  User,
+  Livreur,
+  Course,
+  Expense,
+  DailyPayment,
+  Manquant,
+} from "@/types";
 
 const STORAGE_KEYS = {
   CURRENT_USER: "ged_current_user",
@@ -42,7 +49,9 @@ export const saveLivreurs = (livreurs: Livreur[]): void => {
   saveToStorage(STORAGE_KEYS.LIVREURS, livreurs);
 };
 
-export const addLivreur = (livreur: Omit<Livreur, "id" | "createdAt">): Livreur => {
+export const addLivreur = (
+  livreur: Omit<Livreur, "id" | "createdAt">,
+): Livreur => {
   const livreurs = getLivreurs();
   const newLivreur: Livreur = {
     ...livreur,
@@ -55,13 +64,13 @@ export const addLivreur = (livreur: Omit<Livreur, "id" | "createdAt">): Livreur 
 
 export const updateLivreur = (id: string, updates: Partial<Livreur>): void => {
   const livreurs = getLivreurs();
-  const updated = livreurs.map(l => l.id === id ? { ...l, ...updates } : l);
+  const updated = livreurs.map((l) => (l.id === id ? { ...l, ...updates } : l));
   saveLivreurs(updated);
 };
 
 export const deleteLivreur = (id: string): void => {
   const livreurs = getLivreurs();
-  saveLivreurs(livreurs.filter(l => l.id !== id));
+  saveLivreurs(livreurs.filter((l) => l.id !== id));
 };
 
 // Courses
@@ -85,13 +94,13 @@ export const addCourse = (course: Omit<Course, "id">): Course => {
 
 export const updateCourse = (id: string, updates: Partial<Course>): void => {
   const courses = getCourses();
-  const updated = courses.map(c => c.id === id ? { ...c, ...updates } : c);
+  const updated = courses.map((c) => (c.id === id ? { ...c, ...updates } : c));
   saveCourses(updated);
 };
 
 export const deleteCourse = (id: string): void => {
   const courses = getCourses();
-  saveCourses(courses.filter(c => c.id !== id));
+  saveCourses(courses.filter((c) => c.id !== id));
 };
 
 // Expenses
@@ -115,7 +124,7 @@ export const addExpense = (expense: Omit<Expense, "id">): Expense => {
 
 export const updateExpense = (id: string, updates: Partial<Expense>): void => {
   const expenses = getExpenses();
-  const updated = expenses.map(e => e.id === id ? { ...e, ...updates } : e);
+  const updated = expenses.map((e) => (e.id === id ? { ...e, ...updates } : e));
   saveExpenses(updated);
 };
 
