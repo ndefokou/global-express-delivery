@@ -24,21 +24,29 @@ export default defineConfig(({ mode }) => ({
         icons: [
           {
             src: "global-express-delivery.png",
-            sizes: "192x192",
+            sizes: "1024x1024",
             type: "image/png",
             purpose: "any",
           },
           {
             src: "global-express-delivery.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "global-express-delivery.png",
-            sizes: "512x512",
+            sizes: "1024x1024",
             type: "image/png",
             purpose: "maskable",
+          },
+        ],
+        screenshots: [
+          {
+            src: "screenshot-desktop.png",
+            sizes: "1696x1302",
+            type: "image/png",
+            form_factor: "wide",
+          },
+          {
+            src: "screenshot-mobile.png",
+            sizes: "500x713",
+            type: "image/png",
+            form_factor: "narrow",
           },
         ],
       },

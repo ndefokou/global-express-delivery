@@ -10,6 +10,7 @@ export interface Livreur {
   id: string;
   name: string;
   phone: string;
+  password?: string;
   active: boolean;
   createdAt: string;
 }

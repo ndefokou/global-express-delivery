@@ -11,19 +11,22 @@ import { Course } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
 
 const LivreurCoursesPage = () => {
-  const user = getCurrentUser();
   const [courses, setCourses] = useState<Course[]>([]);
-  const today = new Date().toISOString().split("T")[0];
+  const [user, setUser] = useState(getCurrentUser());
+  const [today] = useState(new Date().toISOString().split("T")[0]);
 
   useEffect(() => {
-    if (user) {
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
+
+    if (currentUser) {
       const allCourses = getCourses();
       const myCourses = allCourses.filter(
-        (c) => c.livreurId === user.id && c.date === today,
+        (c) => c.livreurId === currentUser.id && c.date === today,
       );
       setCourses(myCourses);
     }
-  }, [user, today]);
+  }, [today]);
 
   const handleArticleStatusChange = (
     courseId: string,
@@ -37,10 +40,10 @@ const LivreurCoursesPage = () => {
     const updatedArticles = course.livraison.articles.map((a) =>
       a.id === articleId
         ? {
-            ...a,
-            status,
-            reason: status === "not_delivered" ? reason : undefined,
-          }
+          ...a,
+          status,
+          reason: status === "not_delivered" ? reason : undefined,
+        }
         : a,
     );
 

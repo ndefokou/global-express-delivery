@@ -16,6 +16,21 @@ const STORAGE_KEYS = {
   MANQUANTS: "ged_manquants",
 } as const;
 
+// Admin password constant
+export const ADMIN_PASSWORD = "global admin password";
+
+// Password validation functions
+export const validateAdminPassword = (password: string): boolean => {
+  return password === ADMIN_PASSWORD;
+};
+
+export const validateLivreurPassword = (livreurId: string, password: string): boolean => {
+  const livreurs = getLivreurs();
+  const livreur = livreurs.find(l => l.id === livreurId);
+  if (!livreur || !livreur.password) return false;
+  return livreur.password === password;
+};
+
 // Generic storage functions
 function getFromStorage<T>(key: string, defaultValue: T): T {
   const stored = localStorage.getItem(key);
