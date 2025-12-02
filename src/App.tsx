@@ -48,7 +48,12 @@ const App = () => (
       <Toaster />
       <Sonner />
       <ReloadPrompt />
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <Routes>
           <Route path="/" element={<Login />} />
 

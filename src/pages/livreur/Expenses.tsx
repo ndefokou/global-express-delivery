@@ -18,8 +18,8 @@ import { Expense } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
 
 const LivreurExpensesPage = () => {
-  const user = getCurrentUser();
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [user, setUser] = useState(getCurrentUser());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     amount: 0,
@@ -28,11 +28,14 @@ const LivreurExpensesPage = () => {
   });
 
   useEffect(() => {
-    if (user) {
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
+
+    if (currentUser) {
       const allExpenses = getExpenses();
-      setExpenses(allExpenses.filter((e) => e.livreurId === user.id));
+      setExpenses(allExpenses.filter((e) => e.livreurId === currentUser.id));
     }
-  }, [user]);
+  }, []);
 
   const handleSubmit = () => {
     if (!formData.description || formData.amount <= 0) {
