@@ -10,12 +10,14 @@ import {
 import {
   calculateDailyPayable,
   isCourseCompleted,
+  calculateDeliveredValue,
   CONSTANTS,
 } from "@/services/calculations";
 
 const LivreurSummaryPage = () => {
   const [summary, setSummary] = useState({
     todayCourses: 0,
+    todayRevenue: 0,
     todayPayable: 0,
     pendingExpenses: 0,
     totalManquants: 0,
@@ -34,6 +36,11 @@ const LivreurSummaryPage = () => {
           c.livreurId === user.id && c.date === today && isCourseCompleted(c),
       );
 
+      const todayRevenue = todayCourses.reduce(
+        (sum, c) => sum + calculateDeliveredValue(c),
+        0,
+      );
+
       const pendingExpenses = expenses.filter(
         (e) => e.livreurId === user.id && !e.validated && !e.rejectedReason,
       );
@@ -49,6 +56,7 @@ const LivreurSummaryPage = () => {
 
       setSummary({
         todayCourses: todayCourses.length,
+        todayRevenue,
         todayPayable,
         pendingExpenses: pendingExpenses.length,
         totalManquants: userManquants.reduce((sum, m) => sum + m.amount, 0),
@@ -69,12 +77,17 @@ const LivreurSummaryPage = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
-              Courses du jour
+              Revenus du jour
             </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary.todayCourses}</div>
+            <div className="text-2xl font-bold">
+              {summary.todayRevenue.toLocaleString()} XOF
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {summary.todayCourses} courses effectuées
+            </p>
           </CardContent>
         </Card>
 

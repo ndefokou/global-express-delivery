@@ -24,14 +24,18 @@ import { toast } from "sonner";
 const PaymentsPage = () => {
   const [payments, setPayments] = useState(getPayments());
   const livreurs = getLivreurs().filter((l) => l.active);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    livreurId: string;
+    date: string;
+    amount: number | string;
+  }>({
     livreurId: "",
     date: new Date().toISOString().split("T")[0],
-    amount: 0,
+    amount: "",
   });
 
   const handleDeclarePayment = () => {
-    if (!formData.livreurId || formData.amount <= 0) {
+    if (!formData.livreurId || !formData.amount || Number(formData.amount) <= 0) {
       toast.error("Veuillez remplir tous les champs");
       return;
     }
@@ -46,7 +50,9 @@ const PaymentsPage = () => {
     );
 
     addPayment({
-      ...formData,
+      livreurId: formData.livreurId,
+      date: formData.date,
+      amount: Number(formData.amount),
       expectedAmount,
     });
 
@@ -54,7 +60,7 @@ const PaymentsPage = () => {
     setFormData({
       livreurId: "",
       date: new Date().toISOString().split("T")[0],
-      amount: 0,
+      amount: "",
     });
     toast.success("Paiement enregistré");
   };
@@ -112,7 +118,7 @@ const PaymentsPage = () => {
                 type="number"
                 value={formData.amount}
                 onChange={(e) =>
-                  setFormData({ ...formData, amount: Number(e.target.value) })
+                  setFormData({ ...formData, amount: e.target.value })
                 }
                 placeholder="0"
               />

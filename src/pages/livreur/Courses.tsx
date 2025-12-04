@@ -217,7 +217,11 @@ const LivreurCoursesPage = () => {
                             type="number"
                             id={`expedition-fee-${course.id}`}
                             placeholder="Entrer le montant"
-                            defaultValue={course.expedition.expeditionFee}
+                            defaultValue={
+                              course.expedition.expeditionFee > 0
+                                ? course.expedition.expeditionFee
+                                : ""
+                            }
                           />
                         </div>
                         <Button

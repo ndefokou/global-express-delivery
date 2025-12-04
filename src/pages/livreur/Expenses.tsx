@@ -21,8 +21,12 @@ const LivreurExpensesPage = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [user, setUser] = useState(getCurrentUser());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    amount: 0,
+  const [formData, setFormData] = useState<{
+    amount: number | string;
+    description: string;
+    date: string;
+  }>({
+    amount: "",
     description: "",
     date: new Date().toISOString().split("T")[0],
   });
@@ -38,20 +42,22 @@ const LivreurExpensesPage = () => {
   }, []);
 
   const handleSubmit = () => {
-    if (!formData.description || formData.amount <= 0) {
+    if (!formData.description || !formData.amount || Number(formData.amount) <= 0) {
       toast.error("Veuillez remplir tous les champs");
       return;
     }
 
     addExpense({
       livreurId: user!.id,
-      ...formData,
+      amount: Number(formData.amount),
+      description: formData.description,
+      date: formData.date,
       validated: false,
     });
 
     setExpenses(getExpenses().filter((e) => e.livreurId === user?.id));
     setFormData({
-      amount: 0,
+      amount: "",
       description: "",
       date: new Date().toISOString().split("T")[0],
     });
@@ -85,7 +91,7 @@ const LivreurExpensesPage = () => {
                   type="number"
                   value={formData.amount}
                   onChange={(e) =>
-                    setFormData({ ...formData, amount: Number(e.target.value) })
+                    setFormData({ ...formData, amount: e.target.value })
                   }
                   placeholder="Ex: 5000"
                 />
