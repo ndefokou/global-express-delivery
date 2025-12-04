@@ -18,7 +18,7 @@ import {
   getCourses,
   getExpenses,
 } from "@/services/storage";
-import { calculateDailyPayable } from "@/services/calculations";
+import { calculateDailyPayable, detectManquants } from "@/services/calculations";
 import { toast } from "sonner";
 
 const PaymentsPage = () => {
@@ -176,6 +176,30 @@ const PaymentsPage = () => {
                           )}
                         </div>
                       </div>
+
+                      {/* Display other manquants (undelivered articles, unvalidated expenses) */}
+                      {(() => {
+                        const dailyManquants = detectManquants(
+                          payment.livreurId,
+                          payment.date,
+                          getCourses(),
+                          undefined,
+                          getExpenses()
+                        ).filter(m => m.type !== "payment_shortage");
+
+                        if (dailyManquants.length > 0) {
+                          return (
+                            <div className="mt-2 pt-2 border-t text-right">
+                              {dailyManquants.map((m, idx) => (
+                                <p key={idx} className="text-sm text-destructive font-medium">
+                                  {m.description} ({m.amount.toLocaleString()} XOF)
+                                </p>
+                              ))}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </div>
                 </CardContent>

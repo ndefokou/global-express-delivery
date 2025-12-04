@@ -62,6 +62,19 @@ export function calculateDailyPayable(
     0,
   );
 
+  // Add value of undelivered articles not returned
+  const undeliveredValue = dayCourses.reduce((sum, c) => {
+    if (c.type === "livraison" && c.livraison) {
+      return (
+        sum +
+        c.livraison.articles
+          .filter((a) => a.status === "not_delivered" && !a.returnedToAdmin)
+          .reduce((s, a) => s + a.price * (a.quantity || 1), 0)
+      );
+    }
+    return sum;
+  }, 0);
+
   const approvedExpenses = expenses
     .filter((e) => e.livreurId === livreurId && e.date === date && e.validated)
     .reduce((sum, e) => sum + e.amount, 0);
@@ -77,7 +90,8 @@ export function calculateDailyPayable(
     .reduce((sum, c) => sum + (c.expedition?.expeditionFee || 0), 0);
 
   return (
-    totalDelivered -
+    totalDelivered +
+    undeliveredValue -
     (CONSTANTS.FIXED_DAILY_COST + approvedExpenses + validatedExpeditionFees)
   );
 }
@@ -99,13 +113,26 @@ export function calculateDailyRemittance(
     0,
   );
 
+  // Add value of undelivered articles not returned
+  const undeliveredValue = dayCourses.reduce((sum, c) => {
+    if (c.type === "livraison" && c.livraison) {
+      return (
+        sum +
+        c.livraison.articles
+          .filter((a) => a.status === "not_delivered" && !a.returnedToAdmin)
+          .reduce((s, a) => s + a.price * (a.quantity || 1), 0)
+      );
+    }
+    return sum;
+  }, 0);
+
   // Deduct validated moto expenses
   const validatedExpenses = expenses
     .filter((e) => e.livreurId === livreurId && e.date === date && e.validated)
     .reduce((sum, e) => sum + e.amount, 0);
 
   // Deduct fixed fuel cost + validated expenses
-  return totalDelivered - (CONSTANTS.FIXED_DAILY_COST + validatedExpenses);
+  return totalDelivered + undeliveredValue - (CONSTANTS.FIXED_DAILY_COST + validatedExpenses);
 }
 
 export function calculateMonthlySalary(
