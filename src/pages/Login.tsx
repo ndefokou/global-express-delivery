@@ -22,6 +22,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PWAInstallButton } from "@/components/PWAInstallButton";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -106,9 +107,12 @@ const Login = () => {
               Global Express Delivery
             </h1>
           </div>
-          <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
+          <p className="text-muted-foreground text-sm sm:text-base md:text-lg mb-4">
             Système de gestion des livraisons
           </p>
+          <div className="flex justify-center">
+            <PWAInstallButton />
+          </div>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
