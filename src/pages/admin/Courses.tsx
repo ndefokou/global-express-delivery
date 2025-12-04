@@ -28,6 +28,7 @@ const CoursesPage = () => {
   const livreurs = getLivreurs().filter((l) => l.active);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [filterDate, setFilterDate] = useState<string>("");
   const [courseType, setCourseType] = useState<"livraison" | "expedition">(
     "livraison",
   );
@@ -166,6 +167,23 @@ const CoursesPage = () => {
       articles: [],
     });
   };
+
+  // Filter and sort courses
+  const getFilteredAndSortedCourses = () => {
+    let filtered = courses;
+
+    // Filter by date if a date is selected
+    if (filterDate) {
+      filtered = filtered.filter(course => course.date === filterDate);
+    }
+
+    // Sort by date (most recent first)
+    return filtered.sort((a, b) => {
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+  };
+
+  const filteredCourses = getFilteredAndSortedCourses();
 
   return (
     <div className="space-y-6">
@@ -384,8 +402,39 @@ const CoursesPage = () => {
         </Dialog>
       </div>
 
+      {/* Date Filter */}
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <Label>Filtrer par date</Label>
+              <Input
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                placeholder="Sélectionner une date"
+              />
+            </div>
+            {filterDate && (
+              <Button
+                variant="outline"
+                onClick={() => setFilterDate("")}
+                className="mt-6"
+              >
+                Afficher toutes les courses
+              </Button>
+            )}
+            <div className="text-sm text-muted-foreground mt-6">
+              {filterDate
+                ? `${filteredCourses.length} course(s) le ${new Date(filterDate).toLocaleDateString("fr-FR")}`
+                : `${filteredCourses.length} course(s) au total`}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="space-y-4">
-        {courses.slice(0, 10).map((course) => {
+        {filteredCourses.map((course) => {
           const livreur = livreurs.find((l) => l.id === course.livreurId);
           return (
             <Card key={course.id}>
@@ -464,10 +513,14 @@ const CoursesPage = () => {
         })}
       </div>
 
-      {courses.length === 0 && (
+      {filteredCourses.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">Aucune course enregistrée</p>
+            <p className="text-muted-foreground">
+              {filterDate
+                ? `Aucune course enregistrée pour le ${new Date(filterDate).toLocaleDateString("fr-FR")}`
+                : "Aucune course enregistrée"}
+            </p>
           </CardContent>
         </Card>
       )}

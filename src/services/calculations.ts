@@ -12,9 +12,8 @@ export const CONSTANTS = {
 
 export function calculateDeliveredValue(course: Course): number {
   if (course.type === "expedition") {
-    return course.completed && course.expedition?.validated
-      ? course.expedition.expeditionFee
-      : 0;
+    // Expedition fees are expenses supported by the company, not revenue
+    return 0;
   }
 
   if (course.type === "livraison" && course.livraison) {
@@ -67,7 +66,20 @@ export function calculateDailyPayable(
     .filter((e) => e.livreurId === livreurId && e.date === date && e.validated)
     .reduce((sum, e) => sum + e.amount, 0);
 
-  return totalDelivered - (CONSTANTS.FIXED_DAILY_COST + approvedExpenses);
+  const validatedExpeditionFees = dayCourses
+    .filter(
+      (c) =>
+        c.type === "expedition" &&
+        c.completed &&
+        c.expedition?.validated &&
+        c.expedition.expeditionFee,
+    )
+    .reduce((sum, c) => sum + (c.expedition?.expeditionFee || 0), 0);
+
+  return (
+    totalDelivered -
+    (CONSTANTS.FIXED_DAILY_COST + approvedExpenses + validatedExpeditionFees)
+  );
 }
 
 export function calculateMonthlySalary(

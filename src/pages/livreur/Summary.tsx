@@ -14,7 +14,6 @@ import {
 } from "@/services/calculations";
 
 const LivreurSummaryPage = () => {
-  const user = getCurrentUser();
   const [summary, setSummary] = useState({
     todayCourses: 0,
     todayPayable: 0,
@@ -23,6 +22,7 @@ const LivreurSummaryPage = () => {
   });
 
   useEffect(() => {
+    const user = getCurrentUser();
     if (user) {
       const today = new Date().toISOString().split("T")[0];
       const courses = getCourses();
@@ -54,7 +54,7 @@ const LivreurSummaryPage = () => {
         totalManquants: userManquants.reduce((sum, m) => sum + m.amount, 0),
       });
     }
-  }, [user]);
+  }, []); // Empty dependency array - runs only once on mount
 
   return (
     <div className="space-y-6">
