@@ -1,7 +1,7 @@
 import { Course, Expense, DailyPayment, Manquant } from "@/types";
 
 export const CONSTANTS = {
-  FIXED_DAILY_COST: 3000,
+  FIXED_DAILY_COST: 2000, // Fixed fuel cost per day
   EXPEDITION_FEE: 1000,
   BASE_SALARY_HIGH: 50000,
   BASE_SALARY_LOW: 25000,
@@ -12,8 +12,8 @@ export const CONSTANTS = {
 
 export function calculateDeliveredValue(course: Course): number {
   if (course.type === "expedition") {
-    // Expedition fees are expenses supported by the company, not revenue
-    return 0;
+    // Expeditions add 1,000 XOF delivery fee when completed
+    return course.completed ? CONSTANTS.EXPEDITION_FEE : 0;
   }
 
   if (course.type === "livraison" && course.livraison) {
@@ -21,7 +21,7 @@ export function calculateDeliveredValue(course: Course): number {
       (a) => a.status === "delivered",
     );
     const articlesTotal = deliveredArticles.reduce(
-      (sum, a) => sum + a.price,
+      (sum, a) => sum + (a.price * a.quantity),
       0,
     );
 
@@ -82,6 +82,32 @@ export function calculateDailyPayable(
   );
 }
 
+// Calculate amount livreur must remit TODAY (before expense validation)
+// Only deducts fixed fuel cost, not expenses or expedition fees
+export function calculateDailyRemittance(
+  livreurId: string,
+  date: string,
+  courses: Course[],
+  expenses: Expense[],
+): number {
+  const dayCourses = courses.filter(
+    (c) => c.livreurId === livreurId && c.date === date,
+  );
+
+  const totalDelivered = dayCourses.reduce(
+    (sum, c) => sum + calculateDeliveredValue(c),
+    0,
+  );
+
+  // Deduct validated moto expenses
+  const validatedExpenses = expenses
+    .filter((e) => e.livreurId === livreurId && e.date === date && e.validated)
+    .reduce((sum, e) => sum + e.amount, 0);
+
+  // Deduct fixed fuel cost + validated expenses
+  return totalDelivered - (CONSTANTS.FIXED_DAILY_COST + validatedExpenses);
+}
+
 export function calculateMonthlySalary(
   livreurId: string,
   startDate: string,
@@ -108,7 +134,7 @@ export function calculateMonthlySalary(
   const totalCourses = relevantCourses.length;
 
   const baseSalary =
-    workingDays >= CONSTANTS.WORKING_DAYS_FOR_SALARY
+    workingDays === CONSTANTS.WORKING_DAYS_FOR_SALARY
       ? totalCourses > CONSTANTS.COURSES_THRESHOLD
         ? CONSTANTS.BASE_SALARY_HIGH
         : CONSTANTS.BASE_SALARY_LOW
@@ -152,7 +178,7 @@ export function detectManquants(
   dayCourses.forEach((course) => {
     if (course.type === "livraison" && course.livraison) {
       const undeliveredNotReturned = course.livraison.articles.filter(
-        (a) => a.status === "not_delivered" && !a.reason?.includes("returned"),
+        (a) => a.status === "not_delivered" && !a.returnedToAdmin,
       );
 
       undeliveredNotReturned.forEach((article) => {
@@ -183,7 +209,7 @@ export function detectManquants(
     }
   }
 
-  // Check unvalidated expenses
+  // Check unvalidated expenses (remain as manquants until validated)
   const unvalidatedExpenses = expenses.filter(
     (e) =>
       e.livreurId === livreurId &&

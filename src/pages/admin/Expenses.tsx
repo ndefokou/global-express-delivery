@@ -26,7 +26,11 @@ const AdminExpensesPage = () => {
     const reason = prompt("Raison du rejet:");
     if (!reason) return;
 
-    updateExpense(id, { validated: false, rejectedReason: reason });
+    updateExpense(id, {
+      validated: false,
+      rejectedReason: reason,
+      rejectedAt: new Date().toISOString()
+    });
     setExpenses(getExpenses());
     toast.success("Dépense rejetée");
   };

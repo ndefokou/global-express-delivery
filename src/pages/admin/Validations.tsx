@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react";
-import { getCourses, updateCourse, getLivreurs } from "@/services/storage";
+import { getCourses, updateCourse, getLivreurs, getCurrentUser } from "@/services/storage";
 import { toast } from "sonner";
 import { Course } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
@@ -24,7 +24,7 @@ const ValidationsPage = () => {
       }
       if (c.type === "livraison" && c.livraison) {
         return c.livraison.articles.some(
-          (a) => a.status === "not_delivered" && !a.reason?.includes("validé"),
+          (a) => a.status === "not_delivered" && !a.returnedToAdmin,
         );
       }
       return false;
@@ -51,9 +51,20 @@ const ValidationsPage = () => {
     const course = pendingCourses.find((c) => c.id === courseId);
     if (!course || !course.livraison) return;
 
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      toast.error("Utilisateur non connecté");
+      return;
+    }
+
     const updatedArticles = course.livraison.articles.map((a) =>
       a.id === articleId
-        ? { ...a, reason: `${a.reason} - Retour validé par admin` }
+        ? {
+          ...a,
+          returnedToAdmin: true,
+          returnValidatedBy: currentUser.id,
+          returnValidatedAt: new Date().toISOString()
+        }
         : a,
     );
 
@@ -74,7 +85,7 @@ const ValidationsPage = () => {
       }
       if (c.type === "livraison" && c.livraison) {
         return c.livraison.articles.some(
-          (a) => a.status === "not_delivered" && !a.reason?.includes("validé"),
+          (a) => a.status === "not_delivered" && !a.returnedToAdmin,
         );
       }
       return false;
@@ -155,7 +166,7 @@ const ValidationsPage = () => {
                         .filter(
                           (a) =>
                             a.status === "not_delivered" &&
-                            !a.reason?.includes("validé"),
+                            !a.returnedToAdmin,
                         )
                         .map((article) => (
                           <div

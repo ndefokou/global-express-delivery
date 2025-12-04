@@ -42,9 +42,9 @@ const CoursesPage = () => {
     articles: [] as Omit<Article, "id">[],
   });
 
-  // Calculate total invoice: sum of articles + admin-entered delivery fee
+  // Calculate total invoice: sum of (articles × quantity) + admin-entered delivery fee
   const calculateTotalInvoice = () => {
-    const articlesTotal = formData.articles.reduce((sum, a) => sum + (a.price || 0), 0);
+    const articlesTotal = formData.articles.reduce((sum, a) => sum + ((a.price || 0) * (a.quantity || 1)), 0);
     return articlesTotal + (formData.deliveryFee || 0);
   };
 
@@ -53,7 +53,7 @@ const CoursesPage = () => {
       ...formData,
       articles: [
         ...formData.articles,
-        { name: "", price: 0, status: "delivered" },
+        { name: "", price: 0, quantity: 1, status: "delivered" },
       ],
     });
   };
@@ -84,6 +84,7 @@ const CoursesPage = () => {
       articles: course.livraison?.articles.map(a => ({
         name: a.name,
         price: a.price,
+        quantity: a.quantity || 1,
         status: a.status,
         reason: a.reason
       })) || [],
@@ -327,16 +328,31 @@ const CoursesPage = () => {
                               }
                               className="flex-1"
                             />
-                            <div className="w-32">
+                            <div className="w-24">
                               <Input
                                 type="number"
-                                placeholder="montant"
+                                placeholder="Prix"
                                 value={article.price || ""}
                                 onChange={(e) =>
                                   updateArticle(
                                     index,
                                     "price",
                                     e.target.value === "" ? 0 : Number(e.target.value),
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="w-20">
+                              <Input
+                                type="number"
+                                min="1"
+                                placeholder="Qté"
+                                value={article.quantity || 1}
+                                onChange={(e) =>
+                                  updateArticle(
+                                    index,
+                                    "quantity",
+                                    e.target.value === "" ? 1 : Number(e.target.value),
                                   )
                                 }
                               />
@@ -361,7 +377,7 @@ const CoursesPage = () => {
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Total articles:</span>
                           <span className="font-medium">
-                            {formData.articles.reduce((sum, a) => sum + (a.price || 0), 0)} XOF
+                            {formData.articles.reduce((sum, a) => sum + ((a.price || 0) * (a.quantity || 1)), 0)} XOF
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
@@ -491,18 +507,18 @@ const CoursesPage = () => {
                       {course.livraison.articles.length}
                     </p>
                     <p>
-                      <span className="font-medium">Frais de livraison (admin):</span>{" "}
+                      <span className="font-medium">Frais de livraison:</span>{" "}
                       {course.livraison.deliveryFee} XOF
                     </p>
                     <div className="border-t pt-2 mt-2">
                       <div className="flex justify-between items-center">
-                        <span className="font-semibold">Facture totale:</span>
+                        <span className="font-semibold">Total client:</span>
                         <span className="font-bold text-primary">
-                          {course.livraison.articles.reduce((sum, a) => sum + (a.price || 0), 0) + (course.livraison.deliveryFee || 0)} XOF
+                          {course.livraison.articles.reduce((sum, a) => sum + ((a.price || 0) * (a.quantity || 1)), 0) + (course.livraison.deliveryFee || 0)} XOF
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        (Articles: {course.livraison.articles.reduce((sum, a) => sum + (a.price || 0), 0)} XOF + Livraison: {course.livraison.deliveryFee || 0} XOF)
+                        (Articles: {course.livraison.articles.reduce((sum, a) => sum + ((a.price || 0) * (a.quantity || 1)), 0)} XOF + Livraison: {course.livraison.deliveryFee || 0} XOF)
                       </p>
                     </div>
                   </div>

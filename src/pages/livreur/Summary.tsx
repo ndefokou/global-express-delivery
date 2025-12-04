@@ -8,7 +8,7 @@ import {
   getCurrentUser,
 } from "@/services/storage";
 import {
-  calculateDailyPayable,
+  calculateDailyRemittance,
   isCourseCompleted,
   calculateDeliveredValue,
   CONSTANTS,
@@ -18,7 +18,7 @@ const LivreurSummaryPage = () => {
   const [summary, setSummary] = useState({
     todayCourses: 0,
     todayRevenue: 0,
-    todayPayable: 0,
+    todayRemittance: 0,
     pendingExpenses: 0,
     totalManquants: 0,
   });
@@ -47,7 +47,7 @@ const LivreurSummaryPage = () => {
 
       const userManquants = manquants.filter((m) => m.livreurId === user.id);
 
-      const todayPayable = calculateDailyPayable(
+      const todayRemittance = calculateDailyRemittance(
         user.id,
         today,
         courses,
@@ -57,7 +57,7 @@ const LivreurSummaryPage = () => {
       setSummary({
         todayCourses: todayCourses.length,
         todayRevenue,
-        todayPayable,
+        todayRemittance,
         pendingExpenses: pendingExpenses.length,
         totalManquants: userManquants.reduce((sum, m) => sum + m.amount, 0),
       });
@@ -100,7 +100,7 @@ const LivreurSummaryPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summary.todayPayable.toLocaleString()} XOF
+              {summary.todayRemittance.toLocaleString()} XOF
             </div>
           </CardContent>
         </Card>

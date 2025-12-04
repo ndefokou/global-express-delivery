@@ -136,7 +136,7 @@ const LivreurCoursesPage = () => {
                             <div>
                               <p className="font-medium">{article.name}</p>
                               <p className="text-sm text-muted-foreground">
-                                {article.price} XOF
+                                {article.price} XOF × {article.quantity || 1} = {(article.price * (article.quantity || 1))} XOF
                               </p>
                             </div>
                             <StatusBadge

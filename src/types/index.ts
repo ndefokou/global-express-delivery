@@ -19,8 +19,12 @@ export interface Article {
   id: string;
   name: string;
   price: number;
+  quantity: number;
   status: "delivered" | "not_delivered";
   reason?: string;
+  returnedToAdmin?: boolean;
+  returnValidatedBy?: string;
+  returnValidatedAt?: string;
 }
 
 export interface Livraison {
@@ -54,6 +58,7 @@ export interface Expense {
   date: string;
   validated: boolean;
   rejectedReason?: string;
+  rejectedAt?: string;
 }
 
 export interface DailyPayment {

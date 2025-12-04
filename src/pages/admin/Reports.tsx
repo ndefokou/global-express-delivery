@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, Download } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FileText, Download, AlertTriangle } from "lucide-react";
 import {
   getLivreurs,
   getCourses,
@@ -186,58 +187,82 @@ const ReportsPage = () => {
             </div>
 
             {selectedLivreur && (
-              <Card className="bg-secondary/50">
-                <CardContent className="pt-6">
-                  {(() => {
-                    const salary = calculateMonthlySalary(
-                      selectedLivreur,
-                      dateRange.start,
-                      dateRange.end,
-                      getCourses(),
-                      getManquants(),
-                    );
+              <>
+                <Card className="bg-secondary/50">
+                  <CardContent className="pt-6">
+                    {(() => {
+                      const salary = calculateMonthlySalary(
+                        selectedLivreur,
+                        dateRange.start,
+                        dateRange.end,
+                        getCourses(),
+                        getManquants(),
+                      );
 
-                    return (
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>Jours travaillés:</span>
-                          <span className="font-medium">
-                            {salary.workingDays}
-                          </span>
+                      return (
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Jours travaillés:</span>
+                            <span className="font-medium">
+                              {salary.workingDays}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Courses livrées:</span>
+                            <span className="font-medium">
+                              {salary.totalCourses}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Salaire de base:</span>
+                            <span className="font-medium">
+                              {salary.baseSalary.toLocaleString()} XOF
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Commissions:</span>
+                            <span className="font-medium">
+                              {salary.commissions.toLocaleString()} XOF
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-destructive">
+                            <span>Manquants:</span>
+                            <span className="font-medium">
+                              -{salary.totalManquants.toLocaleString()} XOF
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                            <span>Net à payer:</span>
+                            <span>{salary.netSalary.toLocaleString()} XOF</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Courses livrées:</span>
-                          <span className="font-medium">
-                            {salary.totalCourses}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Salaire de base:</span>
-                          <span className="font-medium">
-                            {salary.baseSalary.toLocaleString()} XOF
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Commissions:</span>
-                          <span className="font-medium">
-                            {salary.commissions.toLocaleString()} XOF
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-destructive">
-                          <span>Manquants:</span>
-                          <span className="font-medium">
-                            -{salary.totalManquants.toLocaleString()} XOF
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                          <span>Net à payer:</span>
-                          <span>{salary.netSalary.toLocaleString()} XOF</span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+
+                {(() => {
+                  const salary = calculateMonthlySalary(
+                    selectedLivreur,
+                    dateRange.start,
+                    dateRange.end,
+                    getCourses(),
+                    getManquants(),
+                  );
+
+                  return salary.workingDays !== 25 && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        La période sélectionnée contient {salary.workingDays} jours travaillés.
+                        Le salaire de base nécessite exactement 25 jours travaillés.
+                        {salary.workingDays < 25 && " Le livreur ne recevra que les commissions."}
+                        {salary.workingDays > 25 && " Veuillez ajuster la période."}
+                      </AlertDescription>
+                    </Alert>
+                  );
+                })()}
+              </>
             )}
 
             <Button onClick={generatePDF} className="w-full" size="lg">
