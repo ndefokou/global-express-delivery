@@ -5,14 +5,16 @@ import {
   getCourses,
   getPayments,
   getManquants,
+  getExpenses,
 } from "@/services/storage";
-import { isCourseCompleted } from "@/services/calculations";
+import { isCourseCompleted, detectManquants } from "@/services/calculations";
 
 const AdminDashboard = () => {
   const livreurs = getLivreurs().filter((l) => l.active);
   const courses = getCourses();
   const payments = getPayments();
   const manquants = getManquants();
+  const expenses = getExpenses();
 
   const today = new Date().toISOString().split("T")[0];
   const todayCourses = courses.filter(
@@ -20,7 +22,23 @@ const AdminDashboard = () => {
   );
   const todayPayments = payments.filter((p) => p.date === today);
   const totalRevenue = todayPayments.reduce((sum, p) => sum + p.amount, 0);
-  const totalManquants = manquants.reduce((sum, m) => sum + m.amount, 0);
+
+  // Calculate stored manquants
+  const storedManquantsTotal = manquants.reduce((sum, m) => sum + m.amount, 0);
+
+  // Calculate dynamic manquants for today for all livreurs
+  const dynamicManquantsTotal = livreurs.reduce((sum, livreur) => {
+    const dailyManquants = detectManquants(
+      livreur.id,
+      today,
+      courses,
+      undefined,
+      expenses
+    );
+    return sum + dailyManquants.reduce((s, m) => s + m.amount, 0);
+  }, 0);
+
+  const totalManquants = storedManquantsTotal + dynamicManquantsTotal;
 
   return (
     <div className="space-y-4 sm:space-y-6">

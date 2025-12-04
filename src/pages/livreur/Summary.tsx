@@ -11,6 +11,7 @@ import {
   calculateDailyRemittance,
   isCourseCompleted,
   calculateDeliveredValue,
+  detectManquants,
   CONSTANTS,
 } from "@/services/calculations";
 
@@ -54,12 +55,24 @@ const LivreurSummaryPage = () => {
         expenses,
       );
 
+      // Calculate dynamic manquants for today (undelivered articles, unvalidated expenses)
+      const todayDynamicManquants = detectManquants(
+        user.id,
+        today,
+        courses,
+        undefined, // No payment record yet for today
+        expenses
+      );
+
+      const totalDynamicAmount = todayDynamicManquants.reduce((sum, m) => sum + m.amount, 0);
+      const totalStoredAmount = userManquants.reduce((sum, m) => sum + m.amount, 0);
+
       setSummary({
         todayCourses: todayCourses.length,
         todayRevenue,
         todayRemittance,
         pendingExpenses: pendingExpenses.length,
-        totalManquants: userManquants.reduce((sum, m) => sum + m.amount, 0),
+        totalManquants: totalStoredAmount + totalDynamicAmount,
       });
     }
   }, []); // Empty dependency array - runs only once on mount

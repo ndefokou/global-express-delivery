@@ -185,7 +185,7 @@ export function detectManquants(
         manquants.push({
           livreurId,
           type: "undelivered_not_returned",
-          amount: article.price,
+          amount: article.price * (article.quantity || 1),
           description: `Article non livré et non retourné: ${article.name}`,
           date,
         });

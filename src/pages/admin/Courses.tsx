@@ -274,7 +274,7 @@ const CoursesPage = () => {
                             contactName: e.target.value,
                           })
                         }
-                        placeholder="Ex: Marie Kouassi"
+                        placeholder="Ex: John"
                       />
                     </div>
                     <div>
@@ -284,7 +284,7 @@ const CoursesPage = () => {
                         onChange={(e) =>
                           setFormData({ ...formData, quartier: e.target.value })
                         }
-                        placeholder="Ex: Cocody"
+                        placeholder="Ex:Nkolbisson"
                       />
                     </div>
                   </div>
