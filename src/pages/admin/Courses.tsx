@@ -17,8 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Package, Truck } from "lucide-react";
-import { getCourses, addCourse, getLivreurs } from "@/services/storage";
+import { Plus, Package, Truck, Pencil, Trash2 } from "lucide-react";
+import { getCourses, addCourse, getLivreurs, updateCourse, deleteCourse } from "@/services/storage";
 import { toast } from "sonner";
 import { Course, Article } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
@@ -27,6 +27,7 @@ const CoursesPage = () => {
   const [courses, setCourses] = useState<Course[]>(getCourses());
   const livreurs = getLivreurs().filter((l) => l.active);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [courseType, setCourseType] = useState<"livraison" | "expedition">(
     "livraison",
   );
@@ -35,10 +36,16 @@ const CoursesPage = () => {
     date: new Date().toISOString().split("T")[0],
     contactName: "",
     quartier: "",
-    deliveryFee: 500,
+    deliveryFee: 0,
     destinationCity: "",
     articles: [] as Omit<Article, "id">[],
   });
+
+  // Calculate total invoice: sum of articles + admin-entered delivery fee
+  const calculateTotalInvoice = () => {
+    const articlesTotal = formData.articles.reduce((sum, a) => sum + (a.price || 0), 0);
+    return articlesTotal + (formData.deliveryFee || 0);
+  };
 
   const addArticle = () => {
     setFormData({
@@ -63,17 +70,45 @@ const CoursesPage = () => {
     });
   };
 
+  const handleEditCourse = (course: Course) => {
+    setEditingCourse(course);
+    setCourseType(course.type);
+    setFormData({
+      livreurId: course.livreurId,
+      date: course.date,
+      contactName: course.livraison?.contactName || "",
+      quartier: course.livraison?.quartier || "",
+      deliveryFee: course.livraison?.deliveryFee || 0,
+      destinationCity: course.expedition?.destinationCity || "",
+      articles: course.livraison?.articles.map(a => ({
+        name: a.name,
+        price: a.price,
+        status: a.status,
+        reason: a.reason
+      })) || [],
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteCourse = (courseId: string) => {
+    if (confirm("Êtes-vous sûr de vouloir supprimer cette course?")) {
+      deleteCourse(courseId);
+      setCourses(getCourses());
+      toast.success("Course supprimée avec succès");
+    }
+  };
+
   const handleAddCourse = () => {
     if (!formData.livreurId) {
       toast.error("Veuillez sélectionner un livreur");
       return;
     }
 
-    const newCourse: Omit<Course, "id"> = {
+    const courseData: Omit<Course, "id"> = {
       type: courseType,
       livreurId: formData.livreurId,
       date: formData.date,
-      completed: false,
+      completed: editingCourse?.completed || false,
     };
 
     if (courseType === "livraison") {
@@ -85,13 +120,13 @@ const CoursesPage = () => {
         toast.error("Veuillez remplir tous les champs de livraison");
         return;
       }
-      newCourse.livraison = {
+      courseData.livraison = {
         contactName: formData.contactName,
         quartier: formData.quartier,
         deliveryFee: formData.deliveryFee,
         articles: formData.articles.map((a, i) => ({
           ...a,
-          id: `${Date.now()}-${i}`,
+          id: editingCourse?.livraison?.articles[i]?.id || `${Date.now()}-${i}`,
         })),
       };
     } else {
@@ -99,27 +134,34 @@ const CoursesPage = () => {
         toast.error("Veuillez spécifier la ville de destination");
         return;
       }
-      newCourse.expedition = {
+      courseData.expedition = {
         destinationCity: formData.destinationCity,
-        expeditionFee: 0,
-        validated: false,
+        expeditionFee: editingCourse?.expedition?.expeditionFee || 0,
+        validated: editingCourse?.expedition?.validated || false,
       };
     }
 
-    addCourse(newCourse);
+    if (editingCourse) {
+      updateCourse(editingCourse.id, courseData);
+      toast.success("Course modifiée avec succès");
+    } else {
+      addCourse(courseData);
+      toast.success("Course ajoutée avec succès");
+    }
+
     setCourses(getCourses());
     setIsDialogOpen(false);
     resetForm();
-    toast.success("Course ajoutée avec succès");
   };
 
   const resetForm = () => {
+    setEditingCourse(null);
     setFormData({
       livreurId: "",
       date: new Date().toISOString().split("T")[0],
       contactName: "",
       quartier: "",
-      deliveryFee: 500,
+      deliveryFee: 0,
       destinationCity: "",
       articles: [],
     });
@@ -135,7 +177,10 @@ const CoursesPage = () => {
           </p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) resetForm();
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -144,7 +189,7 @@ const CoursesPage = () => {
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Nouvelle course</DialogTitle>
+              <DialogTitle>{editingCourse ? "Modifier la course" : "Nouvelle course"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -229,13 +274,14 @@ const CoursesPage = () => {
                     <Label>Frais de livraison (XOF)</Label>
                     <Input
                       type="number"
-                      value={formData.deliveryFee}
+                      value={formData.deliveryFee || ""}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          deliveryFee: Number(e.target.value),
+                          deliveryFee: e.target.value === "" ? 0 : Number(e.target.value),
                         })
                       }
+                      placeholder="Entrez les frais de livraison"
                     />
                   </div>
 
@@ -253,40 +299,66 @@ const CoursesPage = () => {
                     </div>
                     <div className="space-y-2">
                       {formData.articles.map((article, index) => (
-                        <div key={index} className="flex gap-2">
-                          <Input
-                            placeholder="Nom de l'article"
-                            value={article.name}
-                            onChange={(e) =>
-                              updateArticle(index, "name", e.target.value)
-                            }
-                            className="flex-1"
-                          />
-                          <Input
-                            type="number"
-                            placeholder="Prix"
-                            value={article.price}
-                            onChange={(e) =>
-                              updateArticle(
-                                index,
-                                "price",
-                                Number(e.target.value),
-                              )
-                            }
-                            className="w-32"
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => removeArticle(index)}
-                          >
-                            ×
-                          </Button>
+                        <div key={index} className="space-y-1">
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Nom de l'article"
+                              value={article.name}
+                              onChange={(e) =>
+                                updateArticle(index, "name", e.target.value)
+                              }
+                              className="flex-1"
+                            />
+                            <div className="w-32">
+                              <Input
+                                type="number"
+                                placeholder="montant"
+                                value={article.price || ""}
+                                onChange={(e) =>
+                                  updateArticle(
+                                    index,
+                                    "price",
+                                    e.target.value === "" ? 0 : Number(e.target.value),
+                                  )
+                                }
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => removeArticle(index)}
+                            >
+                              ×
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
+
+                  {formData.articles.length > 0 && (
+                    <div className="bg-primary/5 p-4 rounded-lg">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Total articles:</span>
+                          <span className="font-medium">
+                            {formData.articles.reduce((sum, a) => sum + (a.price || 0), 0)} XOF
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Frais de livraison:</span>
+                          <span className="font-medium">{formData.deliveryFee || 0} XOF</span>
+                        </div>
+                        <div className="border-t pt-2 flex justify-between">
+                          <span className="font-semibold">Facture totale:</span>
+                          <span className="font-bold text-lg text-primary">
+                            {calculateTotalInvoice()} XOF
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div>
@@ -305,7 +377,7 @@ const CoursesPage = () => {
               )}
 
               <Button onClick={handleAddCourse} className="w-full">
-                Créer la course
+                {editingCourse ? "Modifier la course" : "Créer la course"}
               </Button>
             </div>
           </DialogContent>
@@ -340,11 +412,27 @@ const CoursesPage = () => {
                   <StatusBadge
                     status={course.completed ? "delivered" : "pending"}
                   />
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditCourse(course)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteCourse(course.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               {course.type === "livraison" && course.livraison && (
                 <CardContent>
-                  <div className="text-sm space-y-1">
+                  <div className="text-sm space-y-2">
                     <p>
                       <span className="font-medium">Quartier:</span>{" "}
                       {course.livraison.quartier}
@@ -354,9 +442,20 @@ const CoursesPage = () => {
                       {course.livraison.articles.length}
                     </p>
                     <p>
-                      <span className="font-medium">Frais de livraison:</span>{" "}
+                      <span className="font-medium">Frais de livraison (admin):</span>{" "}
                       {course.livraison.deliveryFee} XOF
                     </p>
+                    <div className="border-t pt-2 mt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">Facture totale:</span>
+                        <span className="font-bold text-primary">
+                          {course.livraison.articles.reduce((sum, a) => sum + (a.price || 0), 0) + (course.livraison.deliveryFee || 0)} XOF
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        (Articles: {course.livraison.articles.reduce((sum, a) => sum + (a.price || 0), 0)} XOF + Livraison: {course.livraison.deliveryFee || 0} XOF)
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               )}
