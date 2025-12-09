@@ -6,7 +6,7 @@ import {
   getExpenses,
   getManquants,
   getCurrentUser,
-} from "@/services/storage";
+} from "@/services/supabaseService";
 import {
   calculateDailyRemittance,
   isCourseCompleted,

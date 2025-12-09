@@ -97,8 +97,11 @@ export const getCurrentUser = async (): Promise<User | null> => {
 
     if (error || !userProfile) return null;
 
+    // For livreurs, use their livreur_id; for admins, use their user id
+    const userId = (userProfile as any).livreur_id || userProfile.id;
+
     return {
-        id: userProfile.id,
+        id: userId,
         name: userProfile.name,
         role: userProfile.role as 'admin' | 'livreur',
     };

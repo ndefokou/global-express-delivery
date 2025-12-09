@@ -5,30 +5,39 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Package, Truck, CheckCircle, XCircle } from "lucide-react";
-import { getCourses, updateCourse, getCurrentUser } from "@/services/storage";
+import { getCourses, updateCourse, getCurrentUser } from "@/services/supabaseService";
 import { toast } from "sonner";
 import { Course } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
 
 const LivreurCoursesPage = () => {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [user, setUser] = useState(getCurrentUser());
+  const [user, setUser] = useState<any>(null);
   const [today] = useState(new Date().toISOString().split("T")[0]);
 
   useEffect(() => {
-    const currentUser = getCurrentUser();
-    setUser(currentUser);
-
-    if (currentUser) {
-      const allCourses = getCourses();
-      const myCourses = allCourses.filter(
-        (c) => c.livreurId === currentUser.id && c.date === today,
-      );
-      setCourses(myCourses);
-    }
+    loadCourses();
   }, [today]);
 
-  const handleArticleStatusChange = (
+  const loadCourses = async () => {
+    try {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+
+      if (currentUser) {
+        const allCourses = await getCourses();
+        const myCourses = allCourses.filter(
+          (c) => c.livreurId === currentUser.id && c.date === today,
+        );
+        setCourses(myCourses);
+      }
+    } catch (error) {
+      console.error('Error loading courses:', error);
+      toast.error("Erreur lors du chargement des courses");
+    }
+  };
+
+  const handleArticleStatusChange = async (
     courseId: string,
     articleId: string,
     status: "delivered" | "not_delivered",
@@ -49,38 +58,44 @@ const LivreurCoursesPage = () => {
 
     const hasDelivered = updatedArticles.some((a) => a.status === "delivered");
 
-    updateCourse(courseId, {
-      livraison: { ...course.livraison, articles: updatedArticles },
-      completed: hasDelivered,
-    });
+    try {
+      await updateCourse(courseId, {
+        livraison: { ...course.livraison, articles: updatedArticles },
+        completed: hasDelivered,
+      });
 
-    setCourses(
-      getCourses().filter((c) => c.livreurId === user?.id && c.date === today),
-    );
-    toast.success("Statut mis à jour");
+      await loadCourses();
+      toast.success("Statut mis à jour");
+    } catch (error: any) {
+      console.error('Error updating article:', error);
+      toast.error("Erreur lors de la mise à jour");
+    }
   };
 
-  const handleExpeditionComplete = (courseId: string, fee: number) => {
+  const handleExpeditionComplete = async (courseId: string, fee: number) => {
     if (fee <= 0) {
       toast.error("Veuillez entrer un montant valide");
       return;
     }
 
-    updateCourse(courseId, {
-      expedition: {
-        destinationCity:
-          courses.find((c) => c.id === courseId)?.expedition?.destinationCity ||
-          "",
-        expeditionFee: fee,
-        validated: false,
-      },
-      completed: true,
-    });
+    try {
+      await updateCourse(courseId, {
+        expedition: {
+          destinationCity:
+            courses.find((c) => c.id === courseId)?.expedition?.destinationCity ||
+            "",
+          expeditionFee: fee,
+          validated: false,
+        },
+        completed: true,
+      });
 
-    setCourses(
-      getCourses().filter((c) => c.livreurId === user?.id && c.date === today),
-    );
-    toast.success("Expédition enregistrée");
+      await loadCourses();
+      toast.success("Éxpédition enregistrée");
+    } catch (error: any) {
+      console.error('Error completing expedition:', error);
+      toast.error("Erreur lors de l'enregistrement");
+    }
   };
 
   return (

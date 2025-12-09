@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Wrench } from "lucide-react";
-import { getExpenses, addExpense, getCurrentUser } from "@/services/storage";
+import { getExpenses, addExpense, getCurrentUser } from "@/services/supabaseService";
 import { toast } from "sonner";
 import { Expense } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
