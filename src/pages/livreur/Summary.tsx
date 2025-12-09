@@ -57,31 +57,27 @@ const LivreurSummaryPage = () => {
   };
 
   useEffect(() => {
-    if (user && courses.length > 0 && expenses.length > 0 && manquants.length > 0) { // Depend on all fetched data
+    if (user && courses.length >= 0 && expenses.length >= 0) {
       const todayCourses = courses.filter(
         (c) =>
           c.livreurId === user.id && c.date === today && isCourseCompleted(c),
       );
 
+      // Revenus du jour = total value of delivered items
       const todayRevenue = todayCourses.reduce(
         (sum, c) => sum + calculateDeliveredValue(c),
         0,
       );
 
+      // À remettre aujourd'hui = Revenus du jour - 2000 XOF (fixed daily cost)
+      const todayRemittance = todayRevenue - CONSTANTS.FIXED_DAILY_COST;
+
+      // Pending expenses (not yet validated by admin)
       const pendingExpenses = expenses.filter(
         (e) => e.livreurId === user.id && !e.validated && !e.rejectedReason,
       );
 
-      const userManquants = manquants.filter((m) => m.livreurId === user.id);
-
-      const todayRemittance = calculateDailyRemittance(
-        user.id,
-        today,
-        courses,
-        expenses,
-      );
-
-      // Calculate dynamic manquants for today (undelivered articles, unvalidated expenses)
+      // Calculate manquants: undelivered articles + pending expenses
       const todayDynamicManquants = detectManquants(
         user.id,
         today,
@@ -90,18 +86,20 @@ const LivreurSummaryPage = () => {
         expenses
       );
 
-      const totalDynamicAmount = todayDynamicManquants.reduce((sum, m) => sum + m.amount, 0);
+      // Stored manquants from database
+      const userManquants = manquants.filter((m) => m.livreurId === user.id);
       const totalStoredAmount = userManquants.reduce((sum, m) => sum + m.amount, 0);
+      const totalDynamicAmount = todayDynamicManquants.reduce((sum, m) => sum + m.amount, 0);
 
       setSummary({
         todayCourses: todayCourses.length,
         todayRevenue,
-        todayRemittance,
+        todayRemittance: Math.max(0, todayRemittance), // Don't show negative
         pendingExpenses: pendingExpenses.length,
         totalManquants: totalStoredAmount + totalDynamicAmount,
       });
     }
-  }, []); // Empty dependency array - runs only once on mount
+  }, [user, courses, expenses, manquants, today]);
 
   return (
     <div className="space-y-6">
