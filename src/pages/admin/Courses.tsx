@@ -54,6 +54,7 @@ const CoursesPage = () => {
     livreurId: "",
     date: new Date().toISOString().split("T")[0],
     contactName: "",
+    contactPhone: "",
     quartier: "",
     deliveryFee: 0,
     destinationCity: "",
@@ -92,10 +93,20 @@ const CoursesPage = () => {
   const handleEditCourse = (course: Course) => {
     setEditingCourse(course);
     setCourseType(course.type);
+    let contactName = course.livraison?.contactName || course.expedition?.contactName || "";
+    let contactPhone = course.livraison?.contactPhone || course.expedition?.contactPhone || "";
+
+    // Heuristic: If name looks like a phone number (digits only, length >= 8) and phone is empty, move it
+    if (!contactPhone && /^\d[\d\s]*$/.test(contactName) && contactName.replace(/\s/g, '').length >= 8) {
+      contactPhone = contactName;
+      contactName = "";
+    }
+
     setFormData({
       livreurId: course.livreurId,
       date: course.date,
-      contactName: course.livraison?.contactName || "",
+      contactName,
+      contactPhone,
       quartier: course.livraison?.quartier || "",
       deliveryFee: course.livraison?.deliveryFee || 0,
       destinationCity: course.expedition?.destinationCity || "",
@@ -147,6 +158,7 @@ const CoursesPage = () => {
       }
       courseData.livraison = {
         contactName: formData.contactName,
+        contactPhone: formData.contactPhone,
         quartier: formData.quartier,
         deliveryFee: formData.deliveryFee,
         articles: formData.articles.map((a, i) => ({
@@ -161,6 +173,8 @@ const CoursesPage = () => {
       }
       courseData.expedition = {
         destinationCity: formData.destinationCity,
+        contactName: formData.contactName,
+        contactPhone: formData.contactPhone,
         expeditionFee: editingCourse?.expedition?.expeditionFee || 0,
         validated: editingCourse?.expedition?.validated || false,
       };
@@ -188,8 +202,10 @@ const CoursesPage = () => {
     setEditingCourse(null);
     setFormData({
       livreurId: "",
+      livreurId: "",
       date: new Date().toISOString().split("T")[0],
       contactName: "",
+      contactPhone: "",
       quartier: "",
       deliveryFee: 0,
       destinationCity: "",
@@ -305,6 +321,21 @@ const CoursesPage = () => {
                         placeholder="Ex: John"
                       />
                     </div>
+                    <div>
+                      <Label>Contact (Téléphone)</Label>
+                      <Input
+                        value={formData.contactPhone}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            contactPhone: e.target.value,
+                          })
+                        }
+                        placeholder="Ex: 699..."
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mt-4">
                     <div>
                       <Label>Quartier</Label>
                       <Input
@@ -424,6 +455,34 @@ const CoursesPage = () => {
                 </>
               ) : (
                 <div>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <Label>Nom du contact</Label>
+                      <Input
+                        value={formData.contactName}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            contactName: e.target.value,
+                          })
+                        }
+                        placeholder="Ex: John"
+                      />
+                    </div>
+                    <div>
+                      <Label>Contact (Téléphone)</Label>
+                      <Input
+                        value={formData.contactPhone}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            contactPhone: e.target.value,
+                          })
+                        }
+                        placeholder="Ex: 699..."
+                      />
+                    </div>
+                  </div>
                   <Label>Ville de destination</Label>
                   <Input
                     value={formData.destinationCity}

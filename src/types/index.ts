@@ -29,6 +29,7 @@ export interface Article {
 
 export interface Livraison {
   contactName: string;
+  contactPhone?: string;
   quartier: string;
   articles: Article[];
   deliveryFee: number;
@@ -36,6 +37,8 @@ export interface Livraison {
 
 export interface Expedition {
   destinationCity: string;
+  contactName?: string;
+  contactPhone?: string;
   expeditionFee: number;
   validated: boolean;
 }

@@ -241,6 +241,7 @@ const mapDbCourseToCourse = (dbCourse: DbCourse): Course => {
     if (dbCourse.type === 'livraison') {
         course.livraison = {
             contactName: dbCourse.livraison_contact_name || '',
+            contactPhone: dbCourse.livraison_contact_phone || '',
             quartier: dbCourse.livraison_quartier || '',
             articles: (dbCourse.livraison_articles as unknown as Article[]) || [],
             deliveryFee: dbCourse.livraison_delivery_fee || 0,
@@ -248,6 +249,8 @@ const mapDbCourseToCourse = (dbCourse: DbCourse): Course => {
     } else {
         course.expedition = {
             destinationCity: dbCourse.expedition_destination_city || '',
+            contactName: dbCourse.expedition_contact_name || '',
+            contactPhone: dbCourse.expedition_contact_phone || '',
             expeditionFee: dbCourse.expedition_fee || 0,
             validated: dbCourse.expedition_validated || false,
         };
@@ -291,11 +294,14 @@ export const addCourse = async (course: Omit<Course, 'id'>): Promise<Course> => 
 
     if (course.type === 'livraison' && course.livraison) {
         insertData.livraison_contact_name = course.livraison.contactName;
+        insertData.livraison_contact_phone = course.livraison.contactPhone;
         insertData.livraison_quartier = course.livraison.quartier;
         insertData.livraison_articles = course.livraison.articles as unknown as Json;
         insertData.livraison_delivery_fee = course.livraison.deliveryFee;
     } else if (course.type === 'expedition' && course.expedition) {
         insertData.expedition_destination_city = course.expedition.destinationCity;
+        insertData.expedition_contact_name = course.expedition.contactName;
+        insertData.expedition_contact_phone = course.expedition.contactPhone;
         insertData.expedition_fee = course.expedition.expeditionFee;
         insertData.expedition_validated = course.expedition.validated;
     }
@@ -314,10 +320,13 @@ export const updateCourse = async (id: string, updates: Partial<Course>): Promis
     const updateData: Partial<{
         completed: boolean;
         livraison_contact_name: string | null;
+        livraison_contact_phone: string | null;
         livraison_quartier: string | null;
         livraison_articles: Json | null;
         livraison_delivery_fee: number | null;
         expedition_destination_city: string | null;
+        expedition_contact_name: string | null;
+        expedition_contact_phone: string | null;
         expedition_fee: number | null;
         expedition_validated: boolean | null;
     }> = {};
@@ -328,6 +337,7 @@ export const updateCourse = async (id: string, updates: Partial<Course>): Promis
 
     if (updates.livraison) {
         updateData.livraison_contact_name = updates.livraison.contactName;
+        updateData.livraison_contact_phone = updates.livraison.contactPhone;
         updateData.livraison_quartier = updates.livraison.quartier;
         updateData.livraison_articles = updates.livraison.articles as unknown as Json;
         updateData.livraison_delivery_fee = updates.livraison.deliveryFee;
@@ -335,6 +345,8 @@ export const updateCourse = async (id: string, updates: Partial<Course>): Promis
 
     if (updates.expedition) {
         updateData.expedition_destination_city = updates.expedition.destinationCity;
+        updateData.expedition_contact_name = updates.expedition.contactName;
+        updateData.expedition_contact_phone = updates.expedition.contactPhone;
         updateData.expedition_fee = updates.expedition.expeditionFee;
         updateData.expedition_validated = updates.expedition.validated;
     }

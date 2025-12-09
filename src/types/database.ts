@@ -69,10 +69,13 @@ export interface Database {
                     date: string
                     completed: boolean
                     livraison_contact_name: string | null
+                    livraison_contact_phone: string | null
                     livraison_quartier: string | null
                     livraison_articles: Json | null
                     livraison_delivery_fee: number | null
                     expedition_destination_city: string | null
+                    expedition_contact_name: string | null
+                    expedition_contact_phone: string | null
                     expedition_fee: number | null
                     expedition_validated: boolean | null
                     created_at: string
@@ -85,10 +88,13 @@ export interface Database {
                     date?: string
                     completed?: boolean
                     livraison_contact_name?: string | null
+                    livraison_contact_phone?: string | null
                     livraison_quartier?: string | null
                     livraison_articles?: Json | null
                     livraison_delivery_fee?: number | null
                     expedition_destination_city?: string | null
+                    expedition_contact_name?: string | null
+                    expedition_contact_phone?: string | null
                     expedition_fee?: number | null
                     expedition_validated?: boolean | null
                     created_at?: string
@@ -101,10 +107,13 @@ export interface Database {
                     date?: string
                     completed?: boolean
                     livraison_contact_name?: string | null
+                    livraison_contact_phone?: string | null
                     livraison_quartier?: string | null
                     livraison_articles?: Json | null
                     livraison_delivery_fee?: number | null
                     expedition_destination_city?: string | null
+                    expedition_contact_name?: string | null
+                    expedition_contact_phone?: string | null
                     expedition_fee?: number | null
                     expedition_validated?: boolean | null
                     created_at?: string
