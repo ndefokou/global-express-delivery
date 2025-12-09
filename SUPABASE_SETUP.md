@@ -51,7 +51,7 @@ Before you can run the application with Supabase, you need to:
 1. Go to **Authentication** → **Users**
 2. Click "Add user" → "Create new user"
 3. Fill in:
-   - **Email**: `admin@globalexpress.local`
+   - **Email**: `tcheutchouaarthur38@gmail.com`
    - **Password**: Choose a strong password (THIS IS YOUR ADMIN LOGIN PASSWORD!)
    - **Auto Confirm User**: ✅ CHECK THIS BOX
 4. Click "Create user"

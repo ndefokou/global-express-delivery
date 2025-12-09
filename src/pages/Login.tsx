@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -161,6 +162,9 @@ const Login = () => {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Connexion Administrateur</DialogTitle>
+                <DialogDescription>
+                  Entrez votre mot de passe pour accéder au panneau d'administration.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 pt-4">
                 <div>
@@ -233,6 +237,11 @@ const Login = () => {
                 <DialogTitle>
                   {selectedLivreur ? "Entrez votre mot de passe" : "Qui se connecte ?"}
                 </DialogTitle>
+                <DialogDescription>
+                  {selectedLivreur
+                    ? "Veuillez saisir votre mot de passe pour continuer."
+                    : "Sélectionnez votre profil dans la liste ci-dessous."}
+                </DialogDescription>
               </DialogHeader>
 
               {!selectedLivreur ? (

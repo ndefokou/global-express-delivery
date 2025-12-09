@@ -16,7 +16,7 @@ type DbManquant = Database['public']['Tables']['manquants']['Row'];
 
 export const signInAdmin = async (password: string): Promise<User> => {
     // For admin, we'll use a specific email format
-    const adminEmail = 'admin@globalexpress.local';
+    const adminEmail = 'tcheutchouaarthur38@gmail.com';
 
     const { data, error } = await supabase.auth.signInWithPassword({
         email: adminEmail,
@@ -111,7 +111,7 @@ export const getUserLivreurId = async (): Promise<string | null> => {
 
     const { data: userProfile, error } = await supabase
         .from('users')
-        .select('livreur_id')
+        .select('*')
         .eq('id', session.user.id)
         .single();
 
@@ -195,13 +195,18 @@ export const addLivreur = async (
 };
 
 export const updateLivreur = async (id: string, updates: Partial<Livreur>): Promise<void> => {
-    const { error } = await supabase
-        .from('livreurs')
-        .update({
+    // Filter out undefined values
+    const updateData = Object.fromEntries(
+        Object.entries({
             name: updates.name,
             phone: updates.phone,
             active: updates.active,
-        })
+        }).filter(([_, value]) => value !== undefined)
+    ) as Database['public']['Tables']['livreurs']['Update'];
+
+    const { error } = await supabase
+        .from('livreurs')
+        .update(updateData)
         .eq('id', id);
 
     if (error) throw error;
@@ -303,7 +308,16 @@ export const addCourse = async (course: Omit<Course, 'id'>): Promise<Course> => 
 };
 
 export const updateCourse = async (id: string, updates: Partial<Course>): Promise<void> => {
-    const updateData: Database['public']['Tables']['courses']['Update'] = {};
+    const updateData: Partial<{
+        completed: boolean;
+        livraison_contact_name: string | null;
+        livraison_quartier: string | null;
+        livraison_articles: Json | null;
+        livraison_delivery_fee: number | null;
+        expedition_destination_city: string | null;
+        expedition_fee: number | null;
+        expedition_validated: boolean | null;
+    }> = {};
 
     if (updates.completed !== undefined) {
         updateData.completed = updates.completed;
@@ -324,6 +338,7 @@ export const updateCourse = async (id: string, updates: Partial<Course>): Promis
 
     const { error } = await supabase
         .from('courses')
+        // @ts-ignore
         .update(updateData)
         .eq('id', id);
 
@@ -393,13 +408,18 @@ export const addExpense = async (expense: Omit<Expense, 'id'>): Promise<Expense>
 };
 
 export const updateExpense = async (id: string, updates: Partial<Expense>): Promise<void> => {
-    const { error } = await supabase
-        .from('expenses')
-        .update({
+    // Filter out undefined values
+    const updateData = Object.fromEntries(
+        Object.entries({
             validated: updates.validated,
             rejected_reason: updates.rejectedReason,
             rejected_at: updates.rejectedAt,
-        })
+        }).filter(([_, value]) => value !== undefined)
+    ) as Database['public']['Tables']['expenses']['Update'];
+
+    const { error } = await supabase
+        .from('expenses')
+        .update(updateData)
         .eq('id', id);
 
     if (error) throw error;
