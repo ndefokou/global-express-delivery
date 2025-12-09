@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -17,57 +17,91 @@ import {
   addLivreur,
   updateLivreur,
   deleteLivreur,
-} from "@/services/storage";
+} from "@/services/supabaseService";
 import { toast } from "sonner";
 import { Livreur } from "@/types";
 
 const LivreursPage = () => {
-  const [livreurs, setLivreurs] = useState<Livreur[]>(getLivreurs());
+  const [livreurs, setLivreurs] = useState<Livreur[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({ name: "", phone: "", password: "" });
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [selectedLivreurId, setSelectedLivreurId] = useState<string>("");
   const [newPassword, setNewPassword] = useState("");
 
-  const handleAddLivreur = () => {
+  useEffect(() => {
+    loadLivreurs();
+  }, []);
+
+  const loadLivreurs = async () => {
+    try {
+      const data = await getLivreurs();
+      setLivreurs(data);
+    } catch (error) {
+      console.error('Error loading livreurs:', error);
+      toast.error("Erreur lors du chargement des livreurs");
+    }
+  };
+
+  const handleAddLivreur = async () => {
     if (!formData.name || !formData.phone || !formData.password) {
       toast.error("Veuillez remplir tous les champs");
       return;
     }
 
-    addLivreur({ ...formData, active: true });
-    setLivreurs(getLivreurs());
-    setFormData({ name: "", phone: "", password: "" });
-    setIsDialogOpen(false);
-    toast.success("Livreur ajouté avec succès");
-  };
-
-  const handleToggleActive = (id: string, currentActive: boolean) => {
-    updateLivreur(id, { active: !currentActive });
-    setLivreurs(getLivreurs());
-    toast.success(currentActive ? "Livreur désactivé" : "Livreur activé");
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce livreur ?")) {
-      deleteLivreur(id);
-      setLivreurs(getLivreurs());
-      toast.success("Livreur supprimé");
+    try {
+      await addLivreur({ ...formData, active: true });
+      await loadLivreurs();
+      setFormData({ name: "", phone: "", password: "" });
+      setIsDialogOpen(false);
+      toast.success("Livreur ajouté avec succès");
+    } catch (error: any) {
+      console.error('Error adding livreur:', error);
+      toast.error(error.message || "Erreur lors de l'ajout du livreur");
     }
   };
 
-  const handleChangePassword = () => {
+  const handleToggleActive = async (id: string, currentActive: boolean) => {
+    try {
+      await updateLivreur(id, { active: !currentActive });
+      await loadLivreurs();
+      toast.success(currentActive ? "Livreur désactivé" : "Livreur activé");
+    } catch (error: any) {
+      console.error('Error toggling livreur:', error);
+      toast.error("Erreur lors de la modification");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Êtes-vous sûr de vouloir supprimer ce livreur ?")) {
+      try {
+        await deleteLivreur(id);
+        await loadLivreurs();
+        toast.success("Livreur supprimé");
+      } catch (error: any) {
+        console.error('Error deleting livreur:', error);
+        toast.error("Erreur lors de la suppression");
+      }
+    }
+  };
+
+  const handleChangePassword = async () => {
     if (!newPassword) {
       toast.error("Veuillez entrer un mot de passe");
       return;
     }
 
-    updateLivreur(selectedLivreurId, { password: newPassword });
-    setLivreurs(getLivreurs());
-    setNewPassword("");
-    setSelectedLivreurId("");
-    setIsPasswordDialogOpen(false);
-    toast.success("Mot de passe modifié avec succès");
+    try {
+      await updateLivreur(selectedLivreurId, { password: newPassword });
+      await loadLivreurs();
+      setNewPassword("");
+      setSelectedLivreurId("");
+      setIsPasswordDialogOpen(false);
+      toast.success("Mot de passe modifié avec succès");
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      toast.error("Erreur lors de la modification du mot de passe");
+    }
   };
 
   const openPasswordDialog = (id: string) => {

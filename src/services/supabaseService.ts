@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import type { User, Livreur, Course, Expense, DailyPayment, Manquant, Article } from '@/types';
 import type { Database } from '@/types/database';
 import type { Json } from '@/types/database';
@@ -162,7 +162,7 @@ export const addLivreur = async (
     // Create auth user for the livreur
     const livreurEmail = `livreur-${newLivreur.id}@globalexpress.local`;
 
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: livreurEmail,
         password: livreur.password,
         email_confirm: true,
@@ -186,7 +186,7 @@ export const addLivreur = async (
 
     if (profileError) {
         // Rollback: delete auth user and livreur
-        await supabase.auth.admin.deleteUser(authData.user.id);
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         await supabase.from('livreurs').delete().eq('id', newLivreur.id);
         throw profileError;
     }

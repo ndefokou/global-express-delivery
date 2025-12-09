@@ -69,7 +69,8 @@ const Login = () => {
       toast.success("Connecté en tant qu'Administrateur");
       setAdminPassword("");
       setIsAdminDialogOpen(false);
-      navigate("/admin");
+      // Use setTimeout to ensure dialog closes before navigation
+      setTimeout(() => navigate("/admin"), 100);
     } catch (error: any) {
       console.error('Admin login error:', error);
       toast.error(error.message || "Mot de passe incorrect");
@@ -96,7 +97,8 @@ const Login = () => {
       setSelectedLivreur(null);
       setLivreurPassword("");
       setIsLivreurDialogOpen(false);
-      navigate("/livreur");
+      // Use setTimeout to ensure dialog closes before navigation
+      setTimeout(() => navigate("/livreur"), 100);
     } catch (error: any) {
       console.error('Livreur login error:', error);
       toast.error(error.message || "Mot de passe incorrect");

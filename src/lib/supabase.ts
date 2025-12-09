@@ -3,6 +3,7 @@ import type { Database } from '@/types/database';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
@@ -10,6 +11,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
     );
 }
 
+// Regular client for normal operations
 export const supabase: SupabaseClient<Database> = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
         persistSession: true,
@@ -22,3 +24,14 @@ export const supabase: SupabaseClient<Database> = createClient<Database>(supabas
         },
     },
 });
+
+// Admin client with Service Role Key for admin operations (creating users, etc.)
+// WARNING: This bypasses RLS - only use for admin operations
+export const supabaseAdmin: SupabaseClient<Database> = supabaseServiceRoleKey
+    ? createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+        },
+    })
+    : supabase; // Fallback to regular client if no service role key
