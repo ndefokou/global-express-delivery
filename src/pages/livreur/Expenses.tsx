@@ -18,8 +18,9 @@ import { Expense } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
 
 const LivreurExpensesPage = () => {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [user, setUser] = useState(getCurrentUser());
+  const [user, setUser] = useState<any>(null);
+  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]); // Filtered expenses for the current user
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState<{
     amount: number | string;
@@ -32,37 +33,54 @@ const LivreurExpensesPage = () => {
   });
 
   useEffect(() => {
-    const currentUser = getCurrentUser();
-    setUser(currentUser);
-
-    if (currentUser) {
-      const allExpenses = getExpenses();
-      setExpenses(allExpenses.filter((e) => e.livreurId === currentUser.id));
-    }
+    loadData();
   }, []);
 
-  const handleSubmit = () => {
+  const loadData = async () => {
+    try {
+      const [currentUser, expensesData] = await Promise.all([
+        getCurrentUser(),
+        getExpenses()
+      ]);
+      setUser(currentUser);
+      setAllExpenses(expensesData);
+
+      if (currentUser) {
+        setExpenses(expensesData.filter((e) => e.livreurId === currentUser.id));
+      }
+    } catch (error) {
+      console.error('Error loading expenses:', error);
+      toast.error("Erreur lors du chargement");
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!formData.description || !formData.amount || Number(formData.amount) <= 0) {
       toast.error("Veuillez remplir tous les champs");
       return;
     }
 
-    addExpense({
-      livreurId: user!.id,
-      amount: Number(formData.amount),
-      description: formData.description,
-      date: formData.date,
-      validated: false,
-    });
+    try {
+      await addExpense({
+        livreurId: user!.id,
+        amount: Number(formData.amount),
+        description: formData.description,
+        date: formData.date,
+        validated: false,
+      });
 
-    setExpenses(getExpenses().filter((e) => e.livreurId === user?.id));
-    setFormData({
-      amount: "",
-      description: "",
-      date: new Date().toISOString().split("T")[0],
-    });
-    setIsDialogOpen(false);
-    toast.success("Dépense enregistrée");
+      await loadData();
+      setFormData({
+        amount: "",
+        description: "",
+        date: new Date().toISOString().split("T")[0],
+      });
+      setIsDialogOpen(false);
+      toast.success("Éxpense enregistrée");
+    } catch (error: any) {
+      console.error('Error adding expense:', error);
+      toast.error("Erreur lors de l'enregistrement");
+    }
   };
 
   return (

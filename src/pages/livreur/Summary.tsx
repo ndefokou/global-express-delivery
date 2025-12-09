@@ -14,6 +14,7 @@ import {
   detectManquants,
   CONSTANTS,
 } from "@/services/calculations";
+import { toast } from "sonner";
 
 const LivreurSummaryPage = () => {
   const [summary, setSummary] = useState({
@@ -24,14 +25,39 @@ const LivreurSummaryPage = () => {
     totalManquants: 0,
   });
 
-  useEffect(() => {
-    const user = getCurrentUser();
-    if (user) {
-      const today = new Date().toISOString().split("T")[0];
-      const courses = getCourses();
-      const expenses = getExpenses();
-      const manquants = getManquants();
+  const [user, setUser] = useState<any>(null);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [manquants, setManquants] = useState<any[]>([]); // Added manquants state
+  const [today] = useState(new Date().toISOString().split("T")[0]);
 
+  useEffect(() => {
+    loadData();
+  }, [today]);
+
+  const loadData = async () => {
+    try {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+
+      if (currentUser) {
+        const [coursesData, expensesData, manquantsData] = await Promise.all([
+          getCourses(),
+          getExpenses(),
+          getManquants(), // Fetch manquants here
+        ]);
+        setCourses(coursesData);
+        setExpenses(expensesData);
+        setManquants(manquantsData); // Set manquants state
+      }
+    } catch (error) {
+      console.error('Error loading summary:', error);
+      toast.error("Erreur lors du chargement");
+    }
+  };
+
+  useEffect(() => {
+    if (user && courses.length > 0 && expenses.length > 0 && manquants.length > 0) { // Depend on all fetched data
       const todayCourses = courses.filter(
         (c) =>
           c.livreurId === user.id && c.date === today && isCourseCompleted(c),

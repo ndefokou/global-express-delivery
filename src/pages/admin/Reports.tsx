@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,9 @@ import { toast } from "sonner";
 import jsPDF from "jspdf";
 
 const ReportsPage = () => {
-  const livreurs = getLivreurs();
+  const [livreurs, setLivreurs] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [manquants, setManquants] = useState<any[]>([]);
   const [selectedLivreur, setSelectedLivreur] = useState("");
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -34,6 +36,26 @@ const ReportsPage = () => {
       .split("T")[0],
     end: new Date().toISOString().split("T")[0],
   });
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [livreursData, coursesData, manquantsData] = await Promise.all([
+        getLivreurs(),
+        getCourses(),
+        getManquants()
+      ]);
+      setLivreurs(livreursData);
+      setCourses(coursesData);
+      setManquants(manquantsData);
+    } catch (error) {
+      console.error('Error loading reports:', error);
+      toast.error("Erreur lors du chargement");
+    }
+  };
 
   const generatePDF = () => {
     if (!selectedLivreur) {
@@ -43,9 +65,6 @@ const ReportsPage = () => {
 
     const livreur = livreurs.find((l) => l.id === selectedLivreur);
     if (!livreur) return;
-
-    const courses = getCourses();
-    const manquants = getManquants();
 
     const salary = calculateMonthlySalary(
       selectedLivreur,
@@ -195,8 +214,8 @@ const ReportsPage = () => {
                         selectedLivreur,
                         dateRange.start,
                         dateRange.end,
-                        getCourses(),
-                        getManquants(),
+                        courses,
+                        manquants,
                       );
 
                       return (
@@ -246,8 +265,8 @@ const ReportsPage = () => {
                     selectedLivreur,
                     dateRange.start,
                     dateRange.end,
-                    getCourses(),
-                    getManquants(),
+                    courses,
+                    manquants,
                   );
 
                   return salary.workingDays !== 25 && (
@@ -288,13 +307,13 @@ const ReportsPage = () => {
             <div className="text-center p-4 bg-secondary/50 rounded-lg">
               <p className="text-sm text-muted-foreground">Courses totales</p>
               <p className="text-2xl font-bold">
-                {getCourses().filter((c) => isCourseCompleted(c)).length}
+                {courses.filter((c) => isCourseCompleted(c)).length}
               </p>
             </div>
             <div className="text-center p-4 bg-secondary/50 rounded-lg">
               <p className="text-sm text-muted-foreground">Manquants totaux</p>
               <p className="text-2xl font-bold text-destructive">
-                {getManquants()
+                {manquants
                   .reduce((sum, m) => sum + m.amount, 0)
                   .toLocaleString()}{" "}
                 XOF

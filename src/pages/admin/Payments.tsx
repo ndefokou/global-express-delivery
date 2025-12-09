@@ -22,8 +22,10 @@ import { calculateDailyPayable, detectManquants } from "@/services/calculations"
 import { toast } from "sonner";
 
 const PaymentsPage = () => {
-  const [payments, setPayments] = useState(getPayments());
-  const livreurs = getLivreurs().filter((l) => l.active);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [livreurs, setLivreurs] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [expenses, setExpenses] = useState<any[]>([]);
   const [formData, setFormData] = useState<{
     livreurId: string;
     date: string;
@@ -34,35 +36,60 @@ const PaymentsPage = () => {
     amount: "",
   });
 
-  const handleDeclarePayment = () => {
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [paymentsData, livreursData, coursesData, expensesData] = await Promise.all([
+        getPayments(),
+        getLivreurs(),
+        getCourses(),
+        getExpenses()
+      ]);
+      setPayments(paymentsData);
+      setLivreurs(livreursData.filter((l) => l.active));
+      setCourses(coursesData);
+      setExpenses(expensesData);
+    } catch (error) {
+      console.error('Error loading payments:', error);
+      toast.error("Erreur lors du chargement");
+    }
+  };
+
+  const handleDeclarePayment = async () => {
     if (!formData.livreurId || !formData.amount || Number(formData.amount) <= 0) {
       toast.error("Veuillez remplir tous les champs");
       return;
     }
 
-    const courses = getCourses();
-    const expenses = getExpenses();
-    const expectedAmount = calculateDailyPayable(
-      formData.livreurId,
-      formData.date,
-      courses,
-      expenses,
-    );
+    try {
+      const expectedAmount = calculateDailyPayable(
+        formData.livreurId,
+        formData.date,
+        courses,
+        expenses,
+      );
 
-    addPayment({
-      livreurId: formData.livreurId,
-      date: formData.date,
-      amount: Number(formData.amount),
-      expectedAmount,
-    });
+      await addPayment({
+        livreurId: formData.livreurId,
+        date: formData.date,
+        amount: Number(formData.amount),
+        expectedAmount,
+      });
 
-    setPayments(getPayments());
-    setFormData({
-      livreurId: "",
-      date: new Date().toISOString().split("T")[0],
-      amount: "",
-    });
-    toast.success("Paiement enregistré");
+      await loadData();
+      setFormData({
+        livreurId: "",
+        date: new Date().toISOString().split("T")[0],
+        amount: "",
+      });
+      toast.success("Paiement enregistré");
+    } catch (error: any) {
+      console.error('Error declaring payment:', error);
+      toast.error("Erreur lors de l'enregistrement");
+    }
   };
 
   return (
@@ -182,9 +209,9 @@ const PaymentsPage = () => {
                         const dailyManquants = detectManquants(
                           payment.livreurId,
                           payment.date,
-                          getCourses(),
+                          courses,
                           undefined,
-                          getExpenses()
+                          expenses
                         ).filter(m => m.type !== "payment_shortage");
 
                         if (dailyManquants.length > 0) {

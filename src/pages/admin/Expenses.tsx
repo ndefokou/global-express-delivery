@@ -10,29 +10,53 @@ import StatusBadge from "@/components/StatusBadge";
 
 const AdminExpensesPage = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const livreurs = getLivreurs();
+  const [livreurs, setLivreurs] = useState<any[]>([]);
 
   useEffect(() => {
-    setExpenses(getExpenses());
+    loadData();
   }, []);
 
-  const handleValidate = (id: string) => {
-    updateExpense(id, { validated: true, rejectedReason: undefined });
-    setExpenses(getExpenses());
-    toast.success("Dépense validée");
+  const loadData = async () => {
+    try {
+      const [expensesData, livreursData] = await Promise.all([
+        getExpenses(),
+        getLivreurs()
+      ]);
+      setExpenses(expensesData);
+      setLivreurs(livreursData);
+    } catch (error) {
+      console.error('Error loading expenses:', error);
+      toast.error("Erreur lors du chargement");
+    }
   };
 
-  const handleReject = (id: string) => {
+  const handleValidate = async (id: string) => {
+    try {
+      await updateExpense(id, { validated: true, rejectedReason: undefined });
+      await loadData();
+      toast.success("Dépense validée");
+    } catch (error: any) {
+      console.error('Error validating expense:', error);
+      toast.error("Erreur lors de la validation");
+    }
+  };
+
+  const handleReject = async (id: string) => {
     const reason = prompt("Raison du rejet:");
     if (!reason) return;
 
-    updateExpense(id, {
-      validated: false,
-      rejectedReason: reason,
-      rejectedAt: new Date().toISOString()
-    });
-    setExpenses(getExpenses());
-    toast.success("Dépense rejetée");
+    try {
+      await updateExpense(id, {
+        validated: false,
+        rejectedReason: reason,
+        rejectedAt: new Date().toISOString()
+      });
+      await loadData();
+      toast.success("Dépense rejetée");
+    } catch (error: any) {
+      console.error('Error rejecting expense:', error);
+      toast.error("Erreur lors du rejet");
+    }
   };
 
   const pendingExpenses = expenses.filter(

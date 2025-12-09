@@ -9,89 +9,96 @@ import StatusBadge from "@/components/StatusBadge";
 
 const ValidationsPage = () => {
   const [pendingCourses, setPendingCourses] = useState<Course[]>([]);
-  const livreurs = getLivreurs();
+  const [livreurs, setLivreurs] = useState<any[]>([]);
 
   useEffect(() => {
-    const courses = getCourses();
-    const pending = courses.filter((c) => {
-      if (
-        c.type === "expedition" &&
-        c.expedition &&
-        c.completed &&
-        !c.expedition.validated
-      ) {
-        return true;
-      }
-      if (c.type === "livraison" && c.livraison) {
-        return c.livraison.articles.some(
-          (a) => a.status === "not_delivered" && !a.returnedToAdmin,
-        );
-      }
-      return false;
-    });
-    setPendingCourses(pending);
+    loadData();
   }, []);
 
-  const handleValidateExpedition = (courseId: string, validated: boolean) => {
+  const loadData = async () => {
+    try {
+      const [courses, livreursData] = await Promise.all([
+        getCourses(),
+        getLivreurs()
+      ]);
+
+      const pending = courses.filter((c) => {
+        if (
+          c.type === "expedition" &&
+          c.expedition &&
+          c.completed &&
+          !c.expedition.validated
+        ) {
+          return true;
+        }
+        if (c.type === "livraison" && c.livraison) {
+          return c.livraison.articles.some(
+            (a) => a.status === "not_delivered" && !a.returnedToAdmin,
+          );
+        }
+        return false;
+      });
+
+      setPendingCourses(pending);
+      setLivreurs(livreursData);
+    } catch (error) {
+      console.error('Error loading validations:', error);
+      toast.error("Erreur lors du chargement");
+    }
+  };
+
+  const handleValidateExpedition = async (courseId: string, validated: boolean) => {
     const course = pendingCourses.find((c) => c.id === courseId);
     if (!course || !course.expedition) return;
 
-    updateCourse(courseId, {
-      expedition: {
-        ...course.expedition,
-        validated,
-      },
-    });
+    try {
+      await updateCourse(courseId, {
+        expedition: {
+          ...course.expedition,
+          validated,
+        },
+      });
 
-    setPendingCourses(pendingCourses.filter((c) => c.id !== courseId));
-    toast.success(validated ? "Expédition validée" : "Expédition rejetée");
+      setPendingCourses(pendingCourses.filter((c) => c.id !== courseId));
+      toast.success(validated ? "Expédition validée" : "Expédition rejetée");
+    } catch (error: any) {
+      console.error('Error validating expedition:', error);
+      toast.error("Erreur lors de la validation");
+    }
   };
 
-  const handleValidateReturn = (courseId: string, articleId: string) => {
+  const handleValidateReturn = async (courseId: string, articleId: string) => {
     const course = pendingCourses.find((c) => c.id === courseId);
     if (!course || !course.livraison) return;
 
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
-      toast.error("Utilisateur non connecté");
-      return;
+    try {
+      const currentUser = await getCurrentUser();
+      if (!currentUser) {
+        toast.error("Utilisateur non connecté");
+        return;
+      }
+
+      const updatedArticles = course.livraison.articles.map((a) =>
+        a.id === articleId
+          ? {
+            ...a,
+            returnedToAdmin: true,
+            returnValidatedBy: currentUser.id,
+            returnValidatedAt: new Date().toISOString()
+          }
+          : a,
+      );
+
+      await updateCourse(courseId, {
+        livraison: { ...course.livraison, articles: updatedArticles },
+      });
+
+      await loadData();
+      toast.success("Retour validé");
+    } catch (error: any) {
+      console.error('Error validating return:', error);
+      toast.error("Erreur lors de la validation");
     }
-
-    const updatedArticles = course.livraison.articles.map((a) =>
-      a.id === articleId
-        ? {
-          ...a,
-          returnedToAdmin: true,
-          returnValidatedBy: currentUser.id,
-          returnValidatedAt: new Date().toISOString()
-        }
-        : a,
-    );
-
-    updateCourse(courseId, {
-      livraison: { ...course.livraison, articles: updatedArticles },
-    });
-
-    // Refresh
-    const courses = getCourses();
-    const pending = courses.filter((c) => {
-      if (
-        c.type === "expedition" &&
-        c.expedition &&
-        c.completed &&
-        !c.expedition.validated
-      ) {
-        return true;
-      }
-      if (c.type === "livraison" && c.livraison) {
-        return c.livraison.articles.some(
-          (a) => a.status === "not_delivered" && !a.returnedToAdmin,
-        );
-      }
-      return false;
-    });
-    setPendingCourses(pending);
-    toast.success("Retour validé");
   };
 
   return (
