@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,8 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { UserCog, Bike, Lock } from "lucide-react";
-import { getLivreurs, setCurrentUser, validateAdminPassword, validateLivreurPassword } from "@/services/storage";
+import { UserCog, Bike, Lock, Loader2 } from "lucide-react";
+import { getLivreurs } from "@/services/supabaseService";
+import { signInAdmin, signInLivreur } from "@/services/supabaseService";
 import { toast } from "sonner";
 import { Livreur } from "@/types";
 import {
@@ -31,38 +32,54 @@ const Login = () => {
   const [adminPassword, setAdminPassword] = useState("");
   const [selectedLivreur, setSelectedLivreur] = useState<Livreur | null>(null);
   const [livreurPassword, setLivreurPassword] = useState("");
-  const livreurs = getLivreurs().filter((l) => l.active);
+  const [livreurs, setLivreurs] = useState<Livreur[]>([]);
+  const [isLoadingLivreurs, setIsLoadingLivreurs] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const handleAdminLogin = () => {
+  // Load livreurs when dialog opens
+  useEffect(() => {
+    if (isLivreurDialogOpen) {
+      loadLivreurs();
+    }
+  }, [isLivreurDialogOpen]);
+
+  const loadLivreurs = async () => {
+    setIsLoadingLivreurs(true);
+    try {
+      const allLivreurs = await getLivreurs();
+      setLivreurs(allLivreurs.filter((l) => l.active));
+    } catch (error) {
+      console.error('Error loading livreurs:', error);
+      toast.error("Erreur lors du chargement des livreurs");
+    } finally {
+      setIsLoadingLivreurs(false);
+    }
+  };
+
+  const handleAdminLogin = async () => {
     if (!adminPassword) {
       toast.error("Veuillez entrer le mot de passe");
       return;
     }
 
-    if (!validateAdminPassword(adminPassword)) {
-      toast.error("Mot de passe incorrect");
-      return;
+    setIsLoggingIn(true);
+    try {
+      await signInAdmin(adminPassword);
+      toast.success("Connecté en tant qu'Administrateur");
+      setAdminPassword("");
+      setIsAdminDialogOpen(false);
+      navigate("/admin");
+    } catch (error: any) {
+      console.error('Admin login error:', error);
+      toast.error(error.message || "Mot de passe incorrect");
+    } finally {
+      setIsLoggingIn(false);
     }
-
-    setCurrentUser({
-      id: `admin-${Date.now()}`,
-      name: "Admin",
-      role: "admin",
-    });
-    toast.success("Connecté en tant qu'Administrateur");
-    setAdminPassword("");
-    setIsAdminDialogOpen(false);
-    navigate("/admin");
   };
 
-  const handleLivreurLogin = () => {
+  const handleLivreurLogin = async () => {
     if (!selectedLivreur) {
       toast.error("Veuillez sélectionner un livreur");
-      return;
-    }
-
-    if (!selectedLivreur.password) {
-      toast.error("Ce livreur n'a pas de mot de passe défini. Contactez l'administrateur.");
       return;
     }
 
@@ -71,21 +88,20 @@ const Login = () => {
       return;
     }
 
-    if (!validateLivreurPassword(selectedLivreur.id, livreurPassword)) {
-      toast.error("Mot de passe incorrect");
-      return;
+    setIsLoggingIn(true);
+    try {
+      await signInLivreur(selectedLivreur.id, livreurPassword);
+      toast.success(`Connecté en tant que ${selectedLivreur.name}`);
+      setSelectedLivreur(null);
+      setLivreurPassword("");
+      setIsLivreurDialogOpen(false);
+      navigate("/livreur");
+    } catch (error: any) {
+      console.error('Livreur login error:', error);
+      toast.error(error.message || "Mot de passe incorrect");
+    } finally {
+      setIsLoggingIn(false);
     }
-
-    setCurrentUser({
-      id: selectedLivreur.id,
-      name: selectedLivreur.name,
-      role: "livreur",
-    });
-    toast.success(`Connecté en tant que ${selectedLivreur.name}`);
-    setSelectedLivreur(null);
-    setLivreurPassword("");
-    setIsLivreurDialogOpen(false);
-    navigate("/livreur");
   };
 
   const handleLivreurSelect = (livreur: Livreur) => {
@@ -163,8 +179,15 @@ const Login = () => {
                     />
                   </div>
                 </div>
-                <Button onClick={handleAdminLogin} className="w-full">
-                  Se connecter
+                <Button onClick={handleAdminLogin} className="w-full" disabled={isLoggingIn}>
+                  {isLoggingIn ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Connexion...
+                    </>
+                  ) : (
+                    "Se connecter"
+                  )}
                 </Button>
               </div>
             </DialogContent>
@@ -215,7 +238,11 @@ const Login = () => {
               {!selectedLivreur ? (
                 <ScrollArea className="max-h-[60vh]">
                   <div className="space-y-2 pt-4 pr-4">
-                    {livreurs.length > 0 ? (
+                    {isLoadingLivreurs ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : livreurs.length > 0 ? (
                       livreurs.map((livreur) => (
                         <Button
                           key={livreur.id}
@@ -232,9 +259,6 @@ const Login = () => {
                               {livreur.phone}
                             </p>
                           </div>
-                          {!livreur.password && (
-                            <Lock className="h-4 w-4 text-destructive" />
-                          )}
                         </Button>
                       ))
                     ) : (
@@ -275,11 +299,19 @@ const Login = () => {
                         setLivreurPassword("");
                       }}
                       className="flex-1"
+                      disabled={isLoggingIn}
                     >
                       Retour
                     </Button>
-                    <Button onClick={handleLivreurLogin} className="flex-1">
-                      Se connecter
+                    <Button onClick={handleLivreurLogin} className="flex-1" disabled={isLoggingIn}>
+                      {isLoggingIn ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Connexion...
+                        </>
+                      ) : (
+                        "Se connecter"
+                      )}
                     </Button>
                   </div>
                 </div>

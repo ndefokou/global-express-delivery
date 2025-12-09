@@ -3,6 +3,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { Loader2 } from "lucide-react";
 import Login from "./pages/Login";
 import AdminLayout from "./pages/AdminLayout";
 import LivreurLayout from "./pages/LivreurLayout";
@@ -17,8 +20,8 @@ import LivreurCourses from "./pages/livreur/Courses";
 import LivreurExpenses from "./pages/livreur/Expenses";
 import LivreurSummary from "./pages/livreur/Summary";
 import NotFound from "./pages/NotFound";
-import { getCurrentUser } from "./services/storage";
 import ReloadPrompt from "@/components/ReloadPrompt";
+import type { User } from "@/types";
 
 const queryClient = new QueryClient();
 
@@ -29,7 +32,72 @@ const ProtectedRoute = ({
   children: React.ReactNode;
   requiredRole?: "admin" | "livreur";
 }) => {
-  const user = getCurrentUser();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check current session
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          const { data: userProfile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (userProfile) {
+            setUser({
+              id: userProfile.id,
+              name: userProfile.name,
+              role: userProfile.role as 'admin' | 'livreur',
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Session check error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+      } else if (session?.user) {
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (userProfile) {
+          setUser({
+            id: userProfile.id,
+            name: userProfile.name,
+            role: userProfile.role as 'admin' | 'livreur',
+          });
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!user) {
     return <Navigate to="/" replace />;
