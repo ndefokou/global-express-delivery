@@ -90,6 +90,7 @@ netlify login
 # Initialize Netlify site
 netlify init
 
+
 # Set environment variables
 netlify env:set VITE_SUPABASE_URL "your_supabase_url"
 netlify env:set VITE_SUPABASE_ANON_KEY "your_supabase_anon_key"
