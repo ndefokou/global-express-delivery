@@ -4,11 +4,13 @@ import { DollarSign, Package, AlertTriangle, TrendingUp } from "lucide-react";
 import {
   getCourses,
   getExpenses,
+  getPayments,
   getManquants,
   getCurrentUser,
 } from "@/services/supabaseService";
 import {
   calculateDailyRemittance,
+  calculateDailyFinancials,
   isCourseCompleted,
   calculateDeliveredValue,
   detectManquants,
@@ -28,8 +30,10 @@ const LivreurSummaryPage = () => {
   const [user, setUser] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
-  const [manquants, setManquants] = useState<any[]>([]); // Added manquants state
+  const [payments, setPayments] = useState<any[]>([]);
+  const [manquants, setManquants] = useState<any[]>([]);
   const [today] = useState(new Date().toISOString().split("T")[0]);
+  const [financials, setFinancials] = useState<any>(null);
 
   useEffect(() => {
     loadData();
@@ -41,14 +45,16 @@ const LivreurSummaryPage = () => {
       setUser(currentUser);
 
       if (currentUser) {
-        const [coursesData, expensesData, manquantsData] = await Promise.all([
+        const [coursesData, expensesData, paymentsData, manquantsData] = await Promise.all([
           getCourses(),
           getExpenses(),
-          getManquants(), // Fetch manquants here
+          getPayments(),
+          getManquants(),
         ]);
         setCourses(coursesData);
         setExpenses(expensesData);
-        setManquants(manquantsData); // Set manquants state
+        setPayments(paymentsData);
+        setManquants(manquantsData);
       }
     } catch (error) {
       console.error('Error loading summary:', error);
@@ -58,110 +64,99 @@ const LivreurSummaryPage = () => {
 
   useEffect(() => {
     if (user && courses.length >= 0 && expenses.length >= 0) {
-      const todayCourses = courses.filter(
-        (c) =>
-          c.livreurId === user.id && c.date === today && isCourseCompleted(c),
-      );
-
-      // Revenus du jour = total value of delivered items
-      const todayRevenue = todayCourses.reduce(
-        (sum, c) => sum + calculateDeliveredValue(c),
-        0,
-      );
-
-      // À remettre aujourd'hui = Revenus du jour - 2000 XOF (fixed daily cost)
-      const todayRemittance = todayRevenue - CONSTANTS.FIXED_DAILY_COST;
-
-      // Pending expenses (not yet validated by admin)
-      const pendingExpenses = expenses.filter(
-        (e) => e.livreurId === user.id && !e.validated && !e.rejectedReason,
-      );
-
-      // Calculate manquants: undelivered articles + pending expenses
-      const todayDynamicManquants = detectManquants(
+      const dailyFinancials = calculateDailyFinancials(
         user.id,
         today,
         courses,
-        undefined, // No payment record yet for today
-        expenses
+        expenses,
+        payments
       );
+      setFinancials(dailyFinancials);
 
-      // Stored manquants from database
+      // Stored manquants from database (historical)
       const userManquants = manquants.filter((m) => m.livreurId === user.id);
       const totalStoredAmount = userManquants.reduce((sum, m) => sum + m.amount, 0);
-      const totalDynamicAmount = todayDynamicManquants.reduce((sum, m) => sum + m.amount, 0);
 
       setSummary({
-        todayCourses: todayCourses.length,
-        todayRevenue,
-        todayRemittance: Math.max(0, todayRemittance), // Don't show negative
-        pendingExpenses: pendingExpenses.length,
-        totalManquants: totalStoredAmount + totalDynamicAmount,
+        todayCourses: dailyFinancials.courseCount,
+        todayRevenue: dailyFinancials.totalDelivered,
+        todayRemittance: dailyFinancials.amountToRemit,
+        pendingExpenses: expenses.filter(e => e.livreurId === user.id && !e.validated && !e.rejectedReason).length,
+        totalManquants: totalStoredAmount + dailyFinancials.totalManquant,
       });
     }
-  }, [user, courses, expenses, manquants, today]);
+  }, [user, courses, expenses, payments, manquants, today]);
+
+  if (!financials) return <div>Chargement...</div>;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Récapitulatif</h1>
+        <h1 className="text-3xl font-bold">Récapitulatif Journalier</h1>
         <p className="text-muted-foreground">
-          Vue d'ensemble de votre activité
+          Vue détaillée de votre activité du {new Date(today).toLocaleDateString("fr-FR")}
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Revenus du jour
-            </CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Valeur articles reçus</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {summary.todayRevenue.toLocaleString()} XOF
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {summary.todayCourses} courses effectuées
-            </p>
+            <div className="text-2xl font-bold">{financials.totalReceived.toLocaleString()} XOF</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              À remettre aujourd'hui
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Valeur articles livrés</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {summary.todayRemittance.toLocaleString()} XOF
-            </div>
+            <div className="text-2xl font-bold">{financials.totalDelivered.toLocaleString()} XOF</div>
+            <p className="text-xs text-muted-foreground">{financials.courseCount} courses effectuées</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Dépenses en attente
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-warning" />
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Dépenses validées + Frais</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary.pendingExpenses}</div>
+            <div className="text-2xl font-bold">{financials.totalValidatedExpenses.toLocaleString()} XOF</div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-primary/10 border-primary/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Montant à verser </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">{financials.amountToRemit.toLocaleString()} XOF</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Manquants</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Montant versé</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              {summary.totalManquants.toLocaleString()} XOF
+            <div className="text-2xl font-bold">{financials.amountRemitted.toLocaleString()} XOF</div>
+          </CardContent>
+        </Card>
+
+        <Card className={financials.totalManquant > 0 ? "bg-destructive/10 border-destructive/20" : ""}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              Manquants du jour
+              {financials.totalManquant > 0 && <AlertTriangle className="h-4 w-4 text-destructive" />}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">{financials.totalManquant.toLocaleString()} XOF</div>
+            <div className="text-xs text-muted-foreground space-y-1 mt-1">
+              <p>Manque paiement: {financials.manquantPayment.toLocaleString()} XOF</p>
+              <p>Articles non livrés/retournés: {financials.manquantArticles.toLocaleString()} XOF</p>
             </div>
           </CardContent>
         </Card>

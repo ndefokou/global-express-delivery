@@ -135,6 +135,109 @@ export function calculateDailyRemittance(
   return totalDelivered + undeliveredValue - (CONSTANTS.FIXED_DAILY_COST + validatedExpenses);
 }
 
+// Calculate total value of articles RECEIVED (before delivery)
+export function calculateTotalArticlesReceivedValue(course: Course): number {
+  if (course.type === "livraison" && course.livraison) {
+    return course.livraison.articles.reduce(
+      (sum, a) => sum + (a.price * (a.quantity || 1)),
+      0
+    );
+  }
+  return 0;
+}
+
+export interface DailyFinancials {
+  totalReceived: number;          // A
+  totalDelivered: number;         // B
+  totalValidatedExpenses: number; // C (Expenses + Expedition Fees)
+  amountToRemit: number;          // D = B - C
+  amountRemitted: number;         // E
+  manquantPayment: number;        // Manquant 1 = D - E
+  manquantArticles: number;       // Manquant 2
+  totalManquant: number;          // Total = Manquant 1 + Manquant 2
+  courseCount: number;
+}
+
+export function calculateDailyFinancials(
+  livreurId: string,
+  date: string,
+  courses: Course[],
+  expenses: Expense[],
+  payments: DailyPayment[]
+): DailyFinancials {
+  const dayCourses = courses.filter(
+    (c) => c.livreurId === livreurId && c.date === date
+  );
+
+  // A. Valeur totale des articles reçus
+  const totalReceived = dayCourses.reduce(
+    (sum, c) => sum + calculateTotalArticlesReceivedValue(c),
+    0
+  );
+
+  // B. Valeur totale des articles livrés (includes delivery fees)
+  const totalDelivered = dayCourses.reduce(
+    (sum, c) => sum + calculateDeliveredValue(c),
+    0
+  );
+
+  // C. Somme totale des dépenses validées + frais expedition + fixed daily cost
+  const validatedExpenses = expenses
+    .filter((e) => e.livreurId === livreurId && e.date === date && e.validated)
+    .reduce((sum, e) => sum + e.amount, 0);
+
+  const validatedExpeditionFees = dayCourses
+    .filter(
+      (c) =>
+        c.type === "expedition" &&
+        c.completed &&
+        c.expedition?.validated &&
+        c.expedition.expeditionFee
+    )
+    .reduce((sum, c) => sum + (c.expedition?.expeditionFee || 0), 0);
+
+  const totalValidatedExpenses = validatedExpenses + validatedExpeditionFees + CONSTANTS.FIXED_DAILY_COST;
+
+  // D. Montant à verser: B - C
+  const amountToRemit = Math.max(0, totalDelivered - totalValidatedExpenses);
+
+  // E. Montant versé
+  const dayPayments = payments.filter(
+    (p) => p.livreurId === livreurId && p.date === date
+  );
+  const amountRemitted = dayPayments.reduce((sum, p) => sum + p.amount, 0);
+
+  // Manquant 1: D - E
+  // Only calculate shortage if there is an expected payment or if the day is over/reconciled
+  // For now, we calculate it as simple difference, but it might be negative if they paid more (surplus)
+  const manquantPayment = Math.max(0, amountToRemit - amountRemitted);
+
+  // Manquant 2: somme valeur articles non livrés et non retournés
+  const manquantArticles = dayCourses.reduce((sum, c) => {
+    if (c.type === "livraison" && c.livraison) {
+      return (
+        sum +
+        c.livraison.articles
+          .filter((a) => a.status === "not_delivered" && !a.returnedToAdmin)
+          .reduce((s, a) => s + a.price * (a.quantity || 1), 0)
+      );
+    }
+    return sum;
+  }, 0);
+
+  return {
+    totalReceived,
+    totalDelivered,
+    totalValidatedExpenses,
+    amountToRemit,
+    amountRemitted,
+    manquantPayment,
+    manquantArticles,
+    totalManquant: manquantPayment + manquantArticles,
+    courseCount: dayCourses.filter(isCourseCompleted).length
+  };
+}
+
 export function calculateMonthlySalary(
   livreurId: string,
   startDate: string,
@@ -161,7 +264,7 @@ export function calculateMonthlySalary(
   const totalCourses = relevantCourses.length;
 
   const baseSalary =
-    workingDays === CONSTANTS.WORKING_DAYS_FOR_SALARY
+    workingDays >= CONSTANTS.WORKING_DAYS_FOR_SALARY
       ? totalCourses > CONSTANTS.COURSES_THRESHOLD
         ? CONSTANTS.BASE_SALARY_HIGH
         : CONSTANTS.BASE_SALARY_LOW

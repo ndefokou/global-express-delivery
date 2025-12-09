@@ -17,10 +17,12 @@ import {
   getCourses,
   getManquants,
   getExpenses,
+  getPayments,
 } from "@/services/supabaseService";
 import {
   calculateMonthlySalary,
   isCourseCompleted,
+  calculateDailyFinancials,
 } from "@/services/calculations";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -29,6 +31,8 @@ const ReportsPage = () => {
   const [livreurs, setLivreurs] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [manquants, setManquants] = useState<any[]>([]);
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [selectedLivreur, setSelectedLivreur] = useState("");
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -43,14 +47,18 @@ const ReportsPage = () => {
 
   const loadData = async () => {
     try {
-      const [livreursData, coursesData, manquantsData] = await Promise.all([
+      const [livreursData, coursesData, manquantsData, expensesData, paymentsData] = await Promise.all([
         getLivreurs(),
         getCourses(),
-        getManquants()
+        getManquants(),
+        getExpenses(),
+        getPayments(),
       ]);
       setLivreurs(livreursData);
       setCourses(coursesData);
       setManquants(manquantsData);
+      setExpenses(expensesData);
+      setPayments(paymentsData);
     } catch (error) {
       console.error('Error loading reports:', error);
       toast.error("Erreur lors du chargement");
@@ -207,6 +215,91 @@ const ReportsPage = () => {
 
             {selectedLivreur && (
               <>
+                {/* Daily Recap Section - Visible only when start date equals end date */}
+                {dateRange.start === dateRange.end && (
+                  <Card className="bg-secondary/50 mb-6">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Récapitulatif Journalier ({new Date(dateRange.start).toLocaleDateString("fr-FR")})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {(() => {
+                        const dailyFinancials = calculateDailyFinancials(
+                          selectedLivreur,
+                          dateRange.start,
+                          courses,
+                          expenses,
+                          payments
+                        );
+
+                        return (
+                          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            <Card className="bg-background">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-xs font-medium">Valeur articles reçus</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="text-lg font-bold">{dailyFinancials.totalReceived.toLocaleString()} XOF</div>
+                              </CardContent>
+                            </Card>
+
+                            <Card className="bg-background">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-xs font-medium">Valeur articles livrés</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="text-lg font-bold">{dailyFinancials.totalDelivered.toLocaleString()} XOF</div>
+                                <p className="text-[10px] text-muted-foreground">{dailyFinancials.courseCount} courses</p>
+                              </CardContent>
+                            </Card>
+
+                            <Card className="bg-background">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-xs font-medium">Dépenses validées + Frais</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="text-lg font-bold">{dailyFinancials.totalValidatedExpenses.toLocaleString()} XOF</div>
+                              </CardContent>
+                            </Card>
+
+                            <Card className="bg-primary/10 border-primary/20">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-xs font-medium">Montant à verser</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="text-lg font-bold text-primary">{dailyFinancials.amountToRemit.toLocaleString()} XOF</div>
+                              </CardContent>
+                            </Card>
+
+                            <Card className="bg-background">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-xs font-medium">Montant versé</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="text-lg font-bold">{dailyFinancials.amountRemitted.toLocaleString()} XOF</div>
+                              </CardContent>
+                            </Card>
+
+                            <Card className={`bg-background ${dailyFinancials.totalManquant > 0 ? "border-destructive/50" : ""}`}>
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-xs font-medium flex items-center gap-1">
+                                  Manquants
+                                  {dailyFinancials.totalManquant > 0 && <AlertTriangle className="h-3 w-3 text-destructive" />}
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="text-lg font-bold text-destructive">{dailyFinancials.totalManquant.toLocaleString()} XOF</div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  Paiement: {dailyFinancials.manquantPayment.toLocaleString()} | Articles: {dailyFinancials.manquantArticles.toLocaleString()}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                )}
+
                 <Card className="bg-secondary/50">
                   <CardContent className="pt-6">
                     {(() => {
