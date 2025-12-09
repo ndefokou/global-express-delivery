@@ -17,7 +17,7 @@ import {
   getCourses,
   getManquants,
   getExpenses,
-} from "@/services/storage";
+} from "@/services/supabaseService";
 import {
   calculateMonthlySalary,
   isCourseCompleted,

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react";
-import { getCourses, updateCourse, getLivreurs, getCurrentUser } from "@/services/storage";
+import { getCourses, updateCourse, getLivreurs, getCurrentUser } from "@/services/supabaseService";
 import { toast } from "sonner";
 import { Course } from "@/types";
 import StatusBadge from "@/components/StatusBadge";

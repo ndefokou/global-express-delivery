@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CheckCircle, XCircle, Wrench } from "lucide-react";
-import { getExpenses, updateExpense, getLivreurs } from "@/services/storage";
+import { getExpenses, updateExpense, getLivreurs } from "@/services/supabaseService";
 import { toast } from "sonner";
 import { Expense } from "@/types";
 import StatusBadge from "@/components/StatusBadge";

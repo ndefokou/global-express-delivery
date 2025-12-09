@@ -17,7 +17,7 @@ import {
   addPayment,
   getCourses,
   getExpenses,
-} from "@/services/storage";
+} from "@/services/supabaseService";
 import { calculateDailyPayable, detectManquants } from "@/services/calculations";
 import { toast } from "sonner";
 

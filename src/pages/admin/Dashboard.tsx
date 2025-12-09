@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Package, DollarSign, AlertTriangle } from "lucide-react";
 import {
@@ -6,15 +7,38 @@ import {
   getPayments,
   getManquants,
   getExpenses,
-} from "@/services/storage";
+} from "@/services/supabaseService";
 import { isCourseCompleted, detectManquants } from "@/services/calculations";
 
 const AdminDashboard = () => {
-  const livreurs = getLivreurs().filter((l) => l.active);
-  const courses = getCourses();
-  const payments = getPayments();
-  const manquants = getManquants();
-  const expenses = getExpenses();
+  const [livreurs, setLivreurs] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [manquants, setManquants] = useState<any[]>([]);
+  const [expenses, setExpenses] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [livreursData, coursesData, paymentsData, manquantsData, expensesData] = await Promise.all([
+        getLivreurs(),
+        getCourses(),
+        getPayments(),
+        getManquants(),
+        getExpenses()
+      ]);
+      setLivreurs(livreursData.filter((l) => l.active));
+      setCourses(coursesData);
+      setPayments(paymentsData);
+      setManquants(manquantsData);
+      setExpenses(expensesData);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    }
+  };
 
   const today = new Date().toISOString().split("T")[0];
   const todayCourses = courses.filter(

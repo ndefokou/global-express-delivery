@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,14 +18,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Package, Truck, Pencil, Trash2 } from "lucide-react";
-import { getCourses, addCourse, getLivreurs, updateCourse, deleteCourse } from "@/services/storage";
+import { getCourses, addCourse, getLivreurs, updateCourse, deleteCourse } from "@/services/supabaseService";
 import { toast } from "sonner";
 import { Course, Article } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
 
 const CoursesPage = () => {
-  const [courses, setCourses] = useState<Course[]>(getCourses());
-  const livreurs = getLivreurs().filter((l) => l.active);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [livreurs, setLivreurs] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [coursesData, livreursData] = await Promise.all([
+        getCourses(),
+        getLivreurs()
+      ]);
+      setCourses(coursesData);
+      setLivreurs(livreursData.filter((l) => l.active));
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error("Erreur lors du chargement des données");
+    }
+  };
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [filterDate, setFilterDate] = useState<string>("");
@@ -92,15 +110,20 @@ const CoursesPage = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDeleteCourse = (courseId: string) => {
+  const handleDeleteCourse = async (courseId: string) => {
     if (confirm("Êtes-vous sûr de vouloir supprimer cette course?")) {
-      deleteCourse(courseId);
-      setCourses(getCourses());
-      toast.success("Course supprimée avec succès");
+      try {
+        await deleteCourse(courseId);
+        await loadData();
+        toast.success("Course supprimée avec succès");
+      } catch (error: any) {
+        console.error('Error deleting course:', error);
+        toast.error("Erreur lors de la suppression");
+      }
     }
   };
 
-  const handleAddCourse = () => {
+  const handleAddCourse = async () => {
     if (!formData.livreurId) {
       toast.error("Veuillez sélectionner un livreur");
       return;
@@ -143,17 +166,22 @@ const CoursesPage = () => {
       };
     }
 
-    if (editingCourse) {
-      updateCourse(editingCourse.id, courseData);
-      toast.success("Course modifiée avec succès");
-    } else {
-      addCourse(courseData);
-      toast.success("Course ajoutée avec succès");
-    }
+    try {
+      if (editingCourse) {
+        await updateCourse(editingCourse.id, courseData);
+        toast.success("Course modifiée avec succès");
+      } else {
+        await addCourse(courseData);
+        toast.success("Course ajoutée avec succès");
+      }
 
-    setCourses(getCourses());
-    setIsDialogOpen(false);
-    resetForm();
+      await loadData();
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error: any) {
+      console.error('Error saving course:', error);
+      toast.error(error.message || "Erreur lors de l'enregistrement");
+    }
   };
 
   const resetForm = () => {
