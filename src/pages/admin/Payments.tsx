@@ -17,6 +17,7 @@ import {
   addPayment,
   getCourses,
   getExpenses,
+  addManquant,
 } from "@/services/supabaseService";
 import { calculateDailyPayable, detectManquants } from "@/services/calculations";
 import { toast } from "sonner";
@@ -72,12 +73,26 @@ const PaymentsPage = () => {
         expenses,
       );
 
-      await addPayment({
+      const newPayment = await addPayment({
         livreurId: formData.livreurId,
         date: formData.date,
         amount: Number(formData.amount),
         expectedAmount,
       });
+
+      // Calculate and persist manquants
+      const detectedManquants = detectManquants(
+        formData.livreurId,
+        formData.date,
+        courses,
+        newPayment,
+        expenses
+      );
+
+      if (detectedManquants.length > 0) {
+        await Promise.all(detectedManquants.map(m => addManquant(m)));
+        toast.warning(`${detectedManquants.length} manquant(s) enregistré(s)`);
+      }
 
       await loadData();
       setFormData({

@@ -2,7 +2,14 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react";
-import { getCourses, updateCourse, getLivreurs, getCurrentUser } from "@/services/supabaseService";
+import {
+  getCourses,
+  updateCourse,
+  getLivreurs,
+  getCurrentUser,
+  getManquants,
+  deleteManquant
+} from "@/services/supabaseService";
 import { toast } from "sonner";
 import { Course } from "@/types";
 import StatusBadge from "@/components/StatusBadge";
@@ -78,6 +85,9 @@ const ValidationsPage = () => {
         return;
       }
 
+      const article = course.livraison.articles.find(a => a.id === articleId);
+      if (!article) return;
+
       const updatedArticles = course.livraison.articles.map((a) =>
         a.id === articleId
           ? {
@@ -92,6 +102,20 @@ const ValidationsPage = () => {
       await updateCourse(courseId, {
         livraison: { ...course.livraison, articles: updatedArticles },
       });
+
+      // Remove corresponding manquant if it exists
+      const manquants = await getManquants({ livreurId: course.livreurId });
+      const manquantToDelete = manquants.find(
+        m =>
+          m.date === course.date &&
+          m.type === "undelivered_not_returned" &&
+          m.description.includes(article.name)
+      );
+
+      if (manquantToDelete) {
+        await deleteManquant(manquantToDelete.id);
+        toast.info("Manquant associé supprimé");
+      }
 
       await loadData();
       toast.success("Retour validé");
