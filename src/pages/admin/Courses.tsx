@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Package, Truck, Pencil, Trash2 } from "lucide-react";
+import { Plus, Package, Truck, Pencil, Trash2, ArrowLeft, User, Calendar } from "lucide-react";
 import { getCourses, addCourse, getLivreurs, updateCourse, deleteCourse } from "@/services/supabaseService";
 import { toast } from "sonner";
 import { Course, Article } from "@/types";
@@ -26,6 +26,7 @@ import StatusBadge from "@/components/StatusBadge";
 const CoursesPage = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [livreurs, setLivreurs] = useState<any[]>([]);
+  const [selectedLivreurId, setSelectedLivreurId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -46,7 +47,6 @@ const CoursesPage = () => {
   };
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [filterDate, setFilterDate] = useState<string>("");
   const [courseType, setCourseType] = useState<"livraison" | "expedition">(
     "livraison",
   );
@@ -72,7 +72,7 @@ const CoursesPage = () => {
       ...formData,
       articles: [
         ...formData.articles,
-        { name: "", price: 0, quantity: 1, status: "delivered" },
+        { name: "", price: 0, quantity: 1, status: "not_delivered" },
       ],
     });
   };
@@ -201,8 +201,7 @@ const CoursesPage = () => {
   const resetForm = () => {
     setEditingCourse(null);
     setFormData({
-      livreurId: "",
-      livreurId: "",
+      livreurId: selectedLivreurId || "",
       date: new Date().toISOString().split("T")[0],
       contactName: "",
       contactPhone: "",
@@ -213,31 +212,56 @@ const CoursesPage = () => {
     });
   };
 
-  // Filter and sort courses
-  const getFilteredAndSortedCourses = () => {
-    let filtered = courses;
+  // Group courses by date
+  const getGroupedCourses = () => {
+    if (!selectedLivreurId) return {};
 
-    // Filter by date if a date is selected
-    if (filterDate) {
-      filtered = filtered.filter(course => course.date === filterDate);
-    }
+    const livreurCourses = courses
+      .filter(c => c.livreurId === selectedLivreurId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    // Sort by date (most recent first)
-    return filtered.sort((a, b) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    const grouped: { [key: string]: Course[] } = {};
+
+    livreurCourses.forEach(course => {
+      if (!grouped[course.date]) {
+        grouped[course.date] = [];
+      }
+      grouped[course.date].push(course);
     });
+
+    return grouped;
   };
 
-  const filteredCourses = getFilteredAndSortedCourses();
+  const groupedCourses = getGroupedCourses();
+  const sortedDates = Object.keys(groupedCourses).sort((a, b) =>
+    new Date(b).getTime() - new Date(a).getTime()
+  );
+
+  const selectedLivreur = livreurs.find(l => l.id === selectedLivreurId);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Courses</h1>
-          <p className="text-muted-foreground">
-            Assigner des courses aux livreurs
-          </p>
+        <div className="flex items-center gap-4">
+          {selectedLivreurId && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSelectedLivreurId(null)}
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </Button>
+          )}
+          <div>
+            <h1 className="text-3xl font-bold">
+              {selectedLivreurId ? `Courses - ${selectedLivreur?.name}` : "Courses"}
+            </h1>
+            <p className="text-muted-foreground">
+              {selectedLivreurId
+                ? "Gérer les courses du livreur"
+                : "Sélectionnez un livreur pour voir ses courses"}
+            </p>
+          </div>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -279,6 +303,7 @@ const CoursesPage = () => {
                     onValueChange={(v) =>
                       setFormData({ ...formData, livreurId: v })
                     }
+                    disabled={!!selectedLivreurId && !editingCourse}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner" />
@@ -505,127 +530,142 @@ const CoursesPage = () => {
         </Dialog>
       </div>
 
-      {/* Date Filter */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <Label>Filtrer par date</Label>
-              <Input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                placeholder="Sélectionner une date"
-              />
-            </div>
-            {filterDate && (
-              <Button
-                variant="outline"
-                onClick={() => setFilterDate("")}
-                className="mt-6"
-              >
-                Afficher toutes les courses
-              </Button>
-            )}
-            <div className="text-sm text-muted-foreground mt-6">
-              {filterDate
-                ? `${filteredCourses.length} course(s) le ${new Date(filterDate).toLocaleDateString("fr-FR")}`
-                : `${filteredCourses.length} course(s) au total`}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {!selectedLivreurId ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {livreurs.map((livreur) => {
+            const livreurCourses = courses.filter(c => c.livreurId === livreur.id);
+            const activeCourses = livreurCourses.filter(c => !c.completed).length;
 
-      <div className="space-y-4">
-        {filteredCourses.map((course) => {
-          const livreur = livreurs.find((l) => l.id === course.livreurId);
-          return (
-            <Card key={course.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                    {course.type === "livraison" ? (
-                      <Package className="h-5 w-5 text-primary" />
-                    ) : (
-                      <Truck className="h-5 w-5 text-primary" />
-                    )}
-                    <div>
-                      <CardTitle className="text-lg">
-                        {course.type === "livraison"
-                          ? `Livraison - ${course.livraison?.contactName}`
-                          : `Expédition - ${course.expedition?.destinationCity}`}
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {livreur?.name} •{" "}
-                        {new Date(course.date).toLocaleDateString("fr-FR")}
-                      </p>
-                    </div>
-                  </div>
-                  <StatusBadge
-                    status={course.completed ? "delivered" : "pending"}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditCourse(course)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteCourse(course.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              {course.type === "livraison" && course.livraison && (
+            return (
+              <Card
+                key={livreur.id}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => setSelectedLivreurId(livreur.id)}
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-lg font-bold">{livreur.name}</CardTitle>
+                  <User className="h-5 w-5 text-muted-foreground" />
+                </CardHeader>
                 <CardContent>
-                  <div className="text-sm space-y-2">
-                    <p>
-                      <span className="font-medium">Quartier:</span>{" "}
-                      {course.livraison.quartier}
-                    </p>
-                    <p>
-                      <span className="font-medium">Articles:</span>{" "}
-                      {course.livraison.articles.length}
-                    </p>
-                    <p>
-                      <span className="font-medium">Frais de livraison:</span>{" "}
-                      {course.livraison.deliveryFee} XOF
-                    </p>
-                    <div className="border-t pt-2 mt-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold">Total client:</span>
-                        <span className="font-bold text-primary">
-                          {course.livraison.articles.reduce((sum, a) => sum + ((a.price || 0) * (a.quantity || 1)), 0) + (course.livraison.deliveryFee || 0)} XOF
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        (Articles: {course.livraison.articles.reduce((sum, a) => sum + ((a.price || 0) * (a.quantity || 1)), 0)} XOF + Livraison: {course.livraison.deliveryFee || 0} XOF)
-                      </p>
+                  <div className="text-sm text-muted-foreground mt-2">
+                    <div className="flex justify-between">
+                      <span>Courses actives:</span>
+                      <span className="font-medium text-foreground">{activeCourses}</span>
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span>Total courses:</span>
+                      <span className="font-medium text-foreground">{livreurCourses.length}</span>
                     </div>
                   </div>
                 </CardContent>
-              )}
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {sortedDates.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">
+                  Aucune course trouvée pour ce livreur
+                </p>
+              </CardContent>
             </Card>
-          );
-        })}
-      </div>
+          ) : (
+            sortedDates.map(date => (
+              <div key={date} className="space-y-4">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <h3 className="font-medium">
+                    {new Date(date).toLocaleDateString("fr-FR", {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </h3>
+                </div>
 
-      {filteredCourses.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">
-              {filterDate
-                ? `Aucune course enregistrée pour le ${new Date(filterDate).toLocaleDateString("fr-FR")}`
-                : "Aucune course enregistrée"}
-            </p>
-          </CardContent>
-        </Card>
+                <div className="grid gap-4">
+                  {groupedCourses[date].map((course) => (
+                    <Card key={course.id}>
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-3">
+                            {course.type === "livraison" ? (
+                              <Package className="h-5 w-5 text-primary" />
+                            ) : (
+                              <Truck className="h-5 w-5 text-primary" />
+                            )}
+                            <div>
+                              <CardTitle className="text-lg">
+                                {course.type === "livraison"
+                                  ? `Livraison - ${course.livraison?.contactName}`
+                                  : `Expédition - ${course.expedition?.destinationCity}`}
+                              </CardTitle>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(course.date).toLocaleDateString("fr-FR")}
+                              </p>
+                            </div>
+                          </div>
+                          <StatusBadge
+                            status={course.completed ? "delivered" : "pending"}
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditCourse(course)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteCourse(course.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      {course.type === "livraison" && course.livraison && (
+                        <CardContent>
+                          <div className="text-sm space-y-2">
+                            <p>
+                              <span className="font-medium">Quartier:</span>{" "}
+                              {course.livraison.quartier}
+                            </p>
+                            <p>
+                              <span className="font-medium">Articles:</span>{" "}
+                              {course.livraison.articles.length}
+                            </p>
+                            <p>
+                              <span className="font-medium">Frais de livraison:</span>{" "}
+                              {course.livraison.deliveryFee} XOF
+                            </p>
+                            <div className="border-t pt-2 mt-2">
+                              <div className="flex justify-between items-center">
+                                <span className="font-semibold">Total client:</span>
+                                <span className="font-bold text-primary">
+                                  {course.livraison.articles.reduce((sum, a) => sum + ((a.price || 0) * (a.quantity || 1)), 0) + (course.livraison.deliveryFee || 0)} XOF
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                (Articles: {course.livraison.articles.reduce((sum, a) => sum + ((a.price || 0) * (a.quantity || 1)), 0)} XOF + Livraison: {course.livraison.deliveryFee || 0} XOF)
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      )}
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       )}
     </div>
   );

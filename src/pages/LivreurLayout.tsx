@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { Package, Wrench, FileText, Menu } from "lucide-react";
+import { Package, Wrench, FileText, Menu, History as HistoryIcon } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -10,6 +10,7 @@ const LivreurLayout = () => {
 
   const navItems = [
     { to: "/livreur", label: "Mes courses", icon: Package, end: true },
+    { to: "/livreur/history", label: "Historique", icon: HistoryIcon },
     { to: "/livreur/expenses", label: "Dépenses moto", icon: Wrench },
     { to: "/livreur/summary", label: "Récapitulatif", icon: FileText },
   ];
@@ -23,10 +24,9 @@ const LivreurLayout = () => {
           end={item.end}
           onClick={() => setIsOpen(false)}
           className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-              isActive
-                ? "bg-primary text-primary-foreground"
-                : "hover:bg-secondary text-foreground"
+            `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive
+              ? "bg-primary text-primary-foreground"
+              : "hover:bg-secondary text-foreground"
             }`
           }
         >

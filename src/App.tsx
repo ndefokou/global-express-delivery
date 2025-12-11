@@ -19,6 +19,7 @@ import AdminReports from "./pages/admin/Reports";
 import LivreurCourses from "./pages/livreur/Courses";
 import LivreurExpenses from "./pages/livreur/Expenses";
 import LivreurSummary from "./pages/livreur/Summary";
+import LivreurHistoryPage from "./pages/livreur/History";
 import NotFound from "./pages/NotFound";
 import ReloadPrompt from "@/components/ReloadPrompt";
 import type { User } from "@/types";
@@ -49,10 +50,11 @@ const ProtectedRoute = ({
             .single();
 
           if (userProfile) {
+            const profile = userProfile as any;
             setUser({
-              id: userProfile.id,
-              name: userProfile.name,
-              role: userProfile.role as 'admin' | 'livreur',
+              id: profile.id,
+              name: profile.name,
+              role: profile.role as 'admin' | 'livreur',
             });
           }
         }
@@ -77,10 +79,11 @@ const ProtectedRoute = ({
           .single();
 
         if (userProfile) {
+          const profile = userProfile as any;
           setUser({
-            id: userProfile.id,
-            name: userProfile.name,
-            role: userProfile.role as 'admin' | 'livreur',
+            id: profile.id,
+            name: profile.name,
+            role: profile.role as 'admin' | 'livreur',
           });
         }
       }
@@ -151,6 +154,7 @@ const App = () => (
             }
           >
             <Route index element={<LivreurCourses />} />
+            <Route path="history" element={<LivreurHistoryPage />} />
             <Route path="expenses" element={<LivreurExpenses />} />
             <Route path="summary" element={<LivreurSummary />} />
           </Route>

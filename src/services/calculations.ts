@@ -207,10 +207,10 @@ export function calculateDailyFinancials(
   );
   const amountRemitted = dayPayments.reduce((sum, p) => sum + p.amount, 0);
 
-  // Manquant 1: D - E
-  // Only calculate shortage if there is an expected payment or if the day is over/reconciled
-  // For now, we calculate it as simple difference, but it might be negative if they paid more (surplus)
-  const manquantPayment = Math.max(0, amountToRemit - amountRemitted);
+  // Manquant 1: Shortage in payments (when actual payment < expected payment)
+  const manquantPayment = dayPayments.reduce((sum, p) => {
+    return sum + Math.max(0, p.expectedAmount - p.amount);
+  }, 0);
 
   // Manquant 2: somme valeur articles non livrés et non retournés
   const manquantArticles = dayCourses.reduce((sum, c) => {
