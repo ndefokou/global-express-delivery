@@ -9,8 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { UserCog, Bike, Lock, Loader2 } from "lucide-react";
-import { getLivreurs } from "@/services/supabaseService";
-import { signInAdmin, signInLivreur } from "@/services/supabaseService";
 import { toast } from "sonner";
 import { Livreur } from "@/types";
 import {
@@ -47,6 +45,7 @@ const Login = () => {
   const loadLivreurs = async () => {
     setIsLoadingLivreurs(true);
     try {
+      const { getLivreurs } = await import("@/services/supabaseService");
       const allLivreurs = await getLivreurs();
       setLivreurs(allLivreurs.filter((l) => l.active));
     } catch (error) {
@@ -65,15 +64,17 @@ const Login = () => {
 
     setIsLoggingIn(true);
     try {
+      const { signInAdmin } = await import("@/services/supabaseService");
       await signInAdmin(adminPassword);
       toast.success("Connecté en tant qu'Administrateur");
       setAdminPassword("");
       setIsAdminDialogOpen(false);
       // Use setTimeout to ensure dialog closes before navigation
       setTimeout(() => navigate("/admin"), 100);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : undefined;
       console.error('Admin login error:', error);
-      toast.error(error.message || "Mot de passe incorrect");
+      toast.error(message || "Mot de passe incorrect");
     } finally {
       setIsLoggingIn(false);
     }
@@ -92,6 +93,7 @@ const Login = () => {
 
     setIsLoggingIn(true);
     try {
+      const { signInLivreur } = await import("@/services/supabaseService");
       await signInLivreur(selectedLivreur.id, livreurPassword);
       toast.success(`Connecté en tant que ${selectedLivreur.name}`);
       setSelectedLivreur(null);
@@ -99,9 +101,10 @@ const Login = () => {
       setIsLivreurDialogOpen(false);
       // Use setTimeout to ensure dialog closes before navigation
       setTimeout(() => navigate("/livreur"), 100);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : undefined;
       console.error('Livreur login error:', error);
-      toast.error(error.message || "Mot de passe incorrect");
+      toast.error(message || "Mot de passe incorrect");
     } finally {
       setIsLoggingIn(false);
     }
@@ -121,6 +124,11 @@ const Login = () => {
               src="/global-express-delivery.png"
               alt="Global Express Delivery Logo"
               className="h-8 w-8 sm:h-12 sm:w-12"
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
+              width="48"
+              height="48"
             />
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
               Global Express Delivery
